@@ -1,0 +1,144 @@
+openapi: 3.0.0
+
+info:
+  title: Epson ChatBot API
+  description: API untuk mengirim pertanyaan ke chatbot Epson
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Development Server
+
+tags:
+  - name: Chat
+    description: Endpoint untuk interaksi dengan chatbot
+  - name: Knowledge Base
+    description: Endpoint untuk mengelola knowledge chatbot
+
+paths:
+  /chat:
+    post:
+      operationId: sendChatMessage
+      summary: Ajukan Pertanyaan
+      description: Endpoint untuk mengirim pertanyaan atau pesan ke sistem chatbot.
+      tags:
+       - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pesan
+              properties:
+                pesan:
+                  type: string
+                  description: Pesan atau pertanyaan dari pengguna
+                  example: "Bagaimana mengatasi tinta printer tidak keluar?"
+      responses:
+        '200':
+          description: Pesan berhasil diproses oleh chatbot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jawaban:
+                    type: string
+                    description: Jawaban dari chatbot
+                    example: "Coba lakukan head cleaning melalui menu maintenance pada printer Anda."
+
+  /knowledge:
+    get:
+      operationId: listKnowledge
+      summary: List Knowledge
+      description: Mengambil seluruh data knowledge chatbot.
+      tags:
+        - Knowledge Base
+      responses:
+        '200':
+          description: Berhasil mengambil daftar knowledge
+
+    post:
+      operationId: addKnowledge
+      summary: Tambah Knowledge Base
+      description: Menambahkan knowledge baru ke sistem.
+      tags:
+        - Knowledge Base
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pertanyaan:
+                  type: string
+                  example: "Kenapa printer Epson berkedip?"
+                jawaban:
+                  type: string
+                  example: "Biasanya karena ink pad counter penuh."
+      responses:
+        '200':
+          description: Knowledge berhasil ditambahkan
+
+  /knowledge/{id}:
+    get:
+      operationId: getKnowledge
+      summary: Detail Knowledge Base
+      description: Mengambil detail knowledge berdasarkan ID.
+      tags:
+        - Knowledge Base
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Berhasil mengambil detail knowledge
+
+    put:
+      operationId: editKnowledge
+      summary: Edit Knowledge Base
+      description: Mengubah data knowledge.
+      tags:
+        - Knowledge Base
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pertanyaan:
+                  type: string
+                jawaban:
+                  type: string
+      responses:
+        '200':
+          description: Knowledge berhasil diperbarui
+
+    delete:
+      operationId: deleteKnowledge
+      summary: Hapus Knowledge
+      description: Menghapus knowledge dari sistem.
+      tags:
+        - Knowledge Base
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Knowledge berhasil dihapus
