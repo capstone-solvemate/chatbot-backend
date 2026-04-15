@@ -10,12 +10,93 @@ servers:
     description: Development Server
 
 tags:
+  - name: Auth
+    description: Endpoint untuk menangani otentikasi pengguna
   - name: Chat
     description: Endpoint untuk interaksi dengan chatbot
   - name: Knowledge Base
     description: Endpoint untuk mengelola knowledge chatbot
 
 paths:
+  /auth/login/employee:
+    post:
+      operationId: loginKaryawan
+      summary: Login karyawan
+      description: Endpoint untuk login karyawan
+      tags:
+      - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  description: Email pengguna
+                  example: admin@gmail.com
+                password:
+                  type: string
+                  description: Password pengguna
+                  example: thesecretpassword
+      responses:
+        '204':
+          description: Login berhasil
+        '400':
+          description: Request body tidak valid atau tidak dapat diproses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Kode error singkat
+                    example: invalid_json
+                  message:
+                    type: string
+                    description: Penjelasan detail mengenai error
+                    example: failed to parse JSON payload from the request body
+        '401':
+          description: Kredensial salah
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Jenis error
+                    example: unauthenticated
+                  message:
+                    type: string
+                    description: Penjelasan error
+                    example: invalid credentials
+        '422':
+          description: Terdapat field yang tidak valid
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Nama field yang salah
+                      example: password
+                    error:
+                      type: string
+                      description: Kesalahan
+                      example: min_length_8
+                    message:
+                      type: string
+                      description: Penjelasan kesalahan
+                      example: must be at least 8 characters long
   /chat:
     post:
       operationId: sendChatMessage
