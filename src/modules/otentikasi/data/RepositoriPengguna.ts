@@ -1,7 +1,7 @@
 import type { Pengguna } from "../domain/Pengguna.js";
 
+import { ModelPengguna } from "../../../models/ModelPengguna.js";
 import { modelToPengguna } from "./model/converters.js";
-import { ModelPengguna } from "./model/ModelPengguna.js";
 
 export class RepositoriPengguna {
   private constructor() {}
