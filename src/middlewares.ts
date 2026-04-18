@@ -2,10 +2,16 @@ import type { NextFunction, Request, Response } from "express";
 
 import type { ValidationFieldError } from "./core/types/ValidationError.js";
 import type ErrorResponse from "./interfaces/ErrorResponse.js";
+import type { PeranPengguna } from "./modules/otentikasi/domain/PeranPengguna.js";
 
 import { UnauthenticatedError, UnauthenticatedReason } from "./core/types/UnauthenticatedError.js";
 import { ValidationError } from "./core/types/ValidationError.js";
-import { env } from "./env.js";
+
+export function auth(peran: PeranPengguna[]): (req: Request, res: Response, next: NextFunction) => void {
+  return (req, res, next) => {
+    console.log(req.cookies);
+  };
+}
 
 export function notFound(req: Request, res: Response, next: NextFunction) {
   res.status(404);

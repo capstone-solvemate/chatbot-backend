@@ -6,3 +6,4 @@ export const routerOtentikasi = express.Router();
 
 const kontrolOtentikasi = KontrolOtentikasi.instance;
 routerOtentikasi.post("/login/employee", (req, res) => kontrolOtentikasi.loginKaryawan(req, res));
+routerOtentikasi.get("/me", (req, res) => kontrolOtentikasi.getInfoPengguna(req, res));

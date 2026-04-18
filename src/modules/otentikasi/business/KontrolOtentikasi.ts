@@ -62,4 +62,8 @@ export class KontrolOtentikasi {
     });
     res.sendStatus(204);
   }
+
+  async getInfoPengguna(req: Request, res: Response): Promise<void> {
+    res.sendStatus(401);
+  }
 }
