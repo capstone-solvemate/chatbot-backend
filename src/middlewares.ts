@@ -47,6 +47,13 @@ export function notFound(req: Request, res: Response, next: NextFunction) {
   next(error);
 }
 
+export function nonProductionAlert(req: Request, res: Response, next: NextFunction) {
+  if (process.env.NODE_ENV !== "production") {
+    res.set("X-Dev-Env-Alert", "1");
+  }
+  next();
+}
+
 export function errorHandler(err: Error, req: Request, res: Response<ErrorResponse | ValidationFieldError[]>, _next: NextFunction) {
   if (err instanceof ValidationError) {
     res.status(422);
