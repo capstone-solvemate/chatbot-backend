@@ -58,11 +58,13 @@ export class KontrolOtentikasi {
       httpOnly: true,
       path: "/api",
       sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       path: "/api/auth/refresh-token",
       sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
     });
     res.sendStatus(204);
   }
