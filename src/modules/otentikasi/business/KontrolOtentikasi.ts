@@ -2,11 +2,13 @@ import type { Request, Response } from "express";
 
 import * as bcrypt from "bcrypt";
 
+import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
+
 import { UnauthenticatedError, UnauthenticatedReason } from "../../../core/types/UnauthenticatedError.js";
 import { RepositoriPengguna } from "../data/RepositoriPengguna.js";
 import { RepositoriToken } from "../data/RepositoriToken.js";
 import { REFRESH_TOKEN_TIMEOUT } from "../domain/constants.js";
-import { PeranPengguna } from "../domain/PeranPengguna.js";
+import { PeranPengguna, peranPenggunaToString } from "../domain/PeranPengguna.js";
 import { RefreshToken } from "../domain/RefreshToken.js";
 import { AuthTokenService } from "./AuthTokenService.js";
 import { validasiLogin } from "./validators.js";
@@ -55,15 +57,30 @@ export class KontrolOtentikasi {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       path: "/api",
+      sameSite: "strict",
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       path: "/api/auth/refresh-token",
+      sameSite: "strict",
     });
     res.sendStatus(204);
   }
 
   async getInfoPengguna(req: Request, res: Response): Promise<void> {
-    res.sendStatus(401);
+    const pengguna = await this.repositoriPengguna.getPenggunaById(req.sesiPengguna!.idPengguna);
+    if (pengguna === null) {
+      throw new UnauthenticatedError(
+        UnauthenticatedReason.UserNotFound,
+        undefined,
+        req.sesiPengguna!.idPengguna,
+      );
+    }
+    const resp: InfoPenggunaDto = {
+      id: pengguna.id,
+      nama: pengguna.nama,
+      peran: peranPenggunaToString(req.sesiPengguna!.peran!),
+    };
+    res.json(resp);
   }
 }

@@ -9,6 +9,9 @@ export default antfu({
     semi: true,
     quotes: "double",
   },
+  ignores: [
+    "types/express.d.ts",
+  ],
 }, {
   rules: {
     "ts/no-redeclare": "off",

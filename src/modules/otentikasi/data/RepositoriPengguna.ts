@@ -17,4 +17,14 @@ export class RepositoriPengguna {
     const pengguna = modelToPengguna(modelPengguna);
     return pengguna;
   }
+
+  async getPenggunaById(id: number): Promise<Pengguna | null> {
+    const modelPengguna = await ModelPengguna.findOne({ where: { id } });
+    if (!modelPengguna) {
+      return null;
+    }
+
+    const pengguna = modelToPengguna(modelPengguna);
+    return pengguna;
+  }
 }

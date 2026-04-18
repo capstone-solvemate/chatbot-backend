@@ -4,12 +4,40 @@ import type { ValidationFieldError } from "./core/types/ValidationError.js";
 import type ErrorResponse from "./interfaces/ErrorResponse.js";
 import type { PeranPengguna } from "./modules/otentikasi/domain/PeranPengguna.js";
 
+import { ForbiddenError } from "./core/types/ForbiddenError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "./core/types/UnauthenticatedError.js";
 import { ValidationError } from "./core/types/ValidationError.js";
+import { AuthTokenService } from "./modules/otentikasi/business/AuthTokenService.js";
 
-export function auth(peran: PeranPengguna[]): (req: Request, res: Response, next: NextFunction) => void {
-  return (req, res, next) => {
-    console.log(req.cookies);
+const authTokenService = AuthTokenService.instance;
+
+export function auth(peranDiizinkan: PeranPengguna[]): (req: Request, res: Response, next: NextFunction) => void {
+  return (req, _res, next) => {
+    const cookies = req.cookies;
+    if (!cookies.accessToken) {
+      next(new UnauthenticatedError(UnauthenticatedReason.NoToken));
+      return;
+    }
+
+    try {
+      const [accessTokenId, idPengguna, peran] = authTokenService.verifikasiAccessToken(cookies.accessToken);
+
+      if ((peran === null) || !(peran in peranDiizinkan)) {
+        next(new ForbiddenError());
+        return;
+      }
+
+      req.sesiPengguna = {
+        accessTokenId,
+        idPengguna,
+        peran,
+      };
+
+      next();
+    }
+    catch (e: any) {
+      next(e);
+    }
   };
 }
 
@@ -33,12 +61,24 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
 
     switch (err.reason) {
       case UnauthenticatedReason.UserNotFound:
-        console.warn(new Date().toISOString(), `An unknown user attempted to log in.${err.email ? ` Email: ${err.email}` : ""}`);
+        if (err.id !== undefined) {
+          console.error(new Date().toISOString(), `A removed user attempted to access app.${err.id ? ` Id: ${err.id}` : ""}`);
+        }
+        else {
+          console.warn(new Date().toISOString(), `An unknown user attempted to log in.${err.email ? ` Email: ${err.email}` : ""}`);
+        }
         break;
       case UnauthenticatedReason.InvalidPassword:
         console.warn(new Date().toISOString(), `User with email "${err.email}" failed to log in due to an invalid password.`);
         break;
     }
+  }
+  else if (err instanceof ForbiddenError) {
+    res.status(403);
+    res.json({
+      error: "forbidden",
+      message: "your role doesn't have access to this",
+    });
   }
   else {
     const statusCode = res.statusCode !== 200 ? res.statusCode : 500;

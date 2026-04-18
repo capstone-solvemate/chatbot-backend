@@ -11,3 +11,14 @@ export function peranPenggunaToString(peran: PeranPengguna): string {
       return "admin";
   }
 }
+
+export function stringToPeranPengguna(peranStr: string): PeranPengguna | null {
+  switch (peranStr.toLowerCase()) {
+    case "karyawan":
+      return PeranPengguna.Karyawan;
+    case "admin":
+      return PeranPengguna.Admin;
+    default:
+      return null;
+  }
+}
