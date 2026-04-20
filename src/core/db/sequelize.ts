@@ -9,10 +9,12 @@ export const sequelize = new Sequelize(
     dialect: "mysql",
     port: Number.parseInt(process.env.DB_PORT || "3306"),
     dialectOptions: {
-      ssl: {
-        require: (!!process.env!.DB_SECURE) === true,
-        rejectUnauthorized: (!!process.env!.DB_IGNORE_SELF_SIGNED_CERT) !== true,
-      },
+      ssl: ((!!process.env.DB_SECURE) === true)
+        ? {
+            require: true,
+            rejectUnauthorized: !!process.env.DB_IGNORE_SELF_SIGNED_CERT === false,
+          }
+        : undefined,
     },
     logging: false,
   },
