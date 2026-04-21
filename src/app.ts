@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -14,6 +15,9 @@ app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+
+app.use(middlewares.nonProductionAlert);
 
 app.get<object, MessageResponse>("/", (req, res) => {
   res.json({
@@ -21,7 +25,7 @@ app.get<object, MessageResponse>("/", (req, res) => {
   });
 });
 
-app.use("/api/v1", api);
+app.use("/api", api);
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);

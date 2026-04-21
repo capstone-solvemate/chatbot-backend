@@ -9,6 +9,9 @@ export default antfu({
     semi: true,
     quotes: "double",
   },
+  ignores: [
+    "types/express.d.ts",
+  ],
 }, {
   rules: {
     "ts/no-redeclare": "off",
@@ -17,13 +20,9 @@ export default antfu({
     "no-console": ["warn"],
     "antfu/no-top-level-await": ["off"],
     "node/prefer-global/process": ["off"],
-    "node/no-process-env": ["error"],
+    // "node/no-process-env": ["error"],
     "perfectionist/sort-imports": ["error", {
       tsconfigRootDir: ".",
-    }],
-    "unicorn/filename-case": ["error", {
-      case: "kebabCase",
-      ignore: ["README.md"],
     }],
     "test/prefer-lowercase-title": ["off"],
   },

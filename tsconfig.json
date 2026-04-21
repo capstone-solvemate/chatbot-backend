@@ -2,6 +2,10 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "commonjs",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./types"],
     "strict": true,
     "noImplicitAny": true,
     "outDir": "dist",
@@ -13,6 +17,7 @@
   "include": [
     "./*.js",
     "src/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "types/express.d.ts"
   ]
 }

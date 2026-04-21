@@ -10,19 +10,100 @@ servers:
     description: Development Server
 
 tags:
+  - name: Auth
+    description: Endpoint untuk menangani otentikasi pengguna
   - name: Chat
     description: Endpoint untuk interaksi dengan chatbot
   - name: Knowledge Base
     description: Endpoint untuk mengelola knowledge chatbot
 
 paths:
+  /api/auth/login/employee:
+    post:
+      operationId: loginKaryawan
+      summary: Login karyawan
+      description: Endpoint untuk login karyawan
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  description: Email pengguna
+                  example: admin@gmail.com
+                password:
+                  type: string
+                  description: Password pengguna
+                  example: thesecretpassword
+      responses:
+        "204":
+          description: Login berhasil
+        "400":
+          description: Request body tidak valid atau tidak dapat diproses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Kode error singkat
+                    example: invalid_json
+                  message:
+                    type: string
+                    description: Penjelasan detail mengenai error
+                    example: failed to parse JSON payload from the request body
+        "401":
+          description: Kredensial salah
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Jenis error
+                    example: unauthenticated
+                  message:
+                    type: string
+                    description: Penjelasan error
+                    example: invalid credentials
+        "422":
+          description: Terdapat field yang tidak valid
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Nama field yang salah
+                      example: password
+                    error:
+                      type: string
+                      description: Kesalahan
+                      example: min_length_8
+                    message:
+                      type: string
+                      description: Penjelasan kesalahan
+                      example: must be at least 8 characters long
   /chat:
     post:
       operationId: sendChatMessage
       summary: Ajukan Pertanyaan
       description: Endpoint untuk mengirim pertanyaan atau pesan ke sistem chatbot.
       tags:
-       - Chat
+        - Chat
       requestBody:
         required: true
         content:
@@ -35,9 +116,9 @@ paths:
                 pesan:
                   type: string
                   description: Pesan atau pertanyaan dari pengguna
-                  example: "Bagaimana mengatasi tinta printer tidak keluar?"
+                  example: Bagaimana mengatasi tinta printer tidak keluar?
       responses:
-        '200':
+        "200":
           description: Pesan berhasil diproses oleh chatbot
           content:
             application/json:
@@ -47,7 +128,7 @@ paths:
                   jawaban:
                     type: string
                     description: Jawaban dari chatbot
-                    example: "Coba lakukan head cleaning melalui menu maintenance pada printer Anda."
+                    example: Coba lakukan head cleaning melalui menu maintenance pada printer Anda.
 
   /knowledge:
     get:
@@ -57,7 +138,7 @@ paths:
       tags:
         - Knowledge Base
       responses:
-        '200':
+        "200":
           description: Berhasil mengambil daftar knowledge
 
     post:
@@ -75,12 +156,12 @@ paths:
               properties:
                 pertanyaan:
                   type: string
-                  example: "Kenapa printer Epson berkedip?"
+                  example: Kenapa printer Epson berkedip?
                 jawaban:
                   type: string
-                  example: "Biasanya karena ink pad counter penuh."
+                  example: Biasanya karena ink pad counter penuh.
       responses:
-        '200':
+        "200":
           description: Knowledge berhasil ditambahkan
 
   /knowledge/{id}:
@@ -97,7 +178,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Berhasil mengambil detail knowledge
 
     put:
@@ -124,7 +205,7 @@ paths:
                 jawaban:
                   type: string
       responses:
-        '200':
+        "200":
           description: Knowledge berhasil diperbarui
 
     delete:
@@ -140,5 +221,5 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Knowledge berhasil dihapus
