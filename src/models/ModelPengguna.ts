@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize";
 
-import { sequelize } from "../core/db/sequelize.js";
+import { DI } from "~/di/DI";
 
-export const ModelPengguna = sequelize.define("ModelPengguna", {
+export const ModelPengguna = DI.provideSequelize().define("ModelPengguna", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,

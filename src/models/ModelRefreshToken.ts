@@ -1,9 +1,10 @@
 import { DataTypes } from "sequelize";
 
-import { sequelize } from "../core/db/sequelize.js";
+import { DI } from "~/di/DI.js";
+
 import { ModelPengguna } from "./ModelPengguna.js";
 
-export const ModelRefreshToken = sequelize.define(
+export const ModelRefreshToken = DI.provideSequelize().define(
   "ModelRefreshToken",
   {
     id: {

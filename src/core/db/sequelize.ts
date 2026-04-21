@@ -1,21 +1,27 @@
 import { Sequelize } from "sequelize";
 
-export const sequelize = new Sequelize(
-  process.env!.DB_NAME!,
-  process.env!.DB_USER!,
-  process.env!.DB_PASS,
-  {
-    host: process.env.DB_HOST,
-    dialect: "mysql",
-    port: Number.parseInt(process.env.DB_PORT || "3306"),
-    dialectOptions: {
-      ssl: ((!!process.env.DB_SECURE) === true)
-        ? {
-            require: true,
-            rejectUnauthorized: !!process.env.DB_IGNORE_SELF_SIGNED_CERT === false,
-          }
-        : undefined,
+import type { Config } from "~/core/config/domain/Config";
+
+export function createSequelize(config: Config): Sequelize {
+  const dbConfig = config.dbConfig;
+
+  return new Sequelize(
+    dbConfig.dbName,
+    dbConfig.user,
+    dbConfig.password,
+    {
+      host: dbConfig.host,
+      dialect: "mysql",
+      port: dbConfig.port,
+      dialectOptions: {
+        ssl: (dbConfig.secureConn)
+          ? {
+              require: true,
+              rejectUnauthorized: !dbConfig.ignoreSelfSignedCert,
+            }
+          : undefined,
+      },
+      logging: false,
     },
-    logging: false,
-  },
-);
+  );
+}

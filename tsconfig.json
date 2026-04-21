@@ -2,6 +2,9 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "commonjs",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
     "typeRoots": ["./node_modules/@types", "./types"],
     "strict": true,
     "noImplicitAny": true,
