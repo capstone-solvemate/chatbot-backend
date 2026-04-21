@@ -1,4 +1,6 @@
-import "dotenv/config";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const config = {
   username: process.env.DB_USER,
@@ -8,7 +10,7 @@ const config = {
   dialect: "mysql",
   port: process.env.DB_PORT,
   dialectOptions: {
-    ssl: (process.env.DB_SECURE === true)
+    ssl: (!!process.env.DB_SECURE === true)
       ? {
           require: true,
           rejectUnauthorized: !!process.env.DB_IGNORE_SELF_SIGNED_CERT === false,
