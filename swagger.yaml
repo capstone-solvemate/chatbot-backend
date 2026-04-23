@@ -16,6 +16,8 @@ tags:
     description: Endpoint untuk interaksi dengan chatbot
   - name: Knowledge Base
     description: Endpoint untuk mengelola knowledge chatbot
+  - name: Tiket
+    description: Endpoint untuk mengelola tiket
 
 paths:
   /api/auth/login/employee:
@@ -223,3 +225,111 @@ paths:
       responses:
         "200":
           description: Knowledge berhasil dihapus
+
+  /tiket:
+    post:
+      operationId: createTiket
+      summary: Membuat tiket eskalasi
+      description: Membuat tiket eskalasi. Hanya dapat dilakukan oleh pengguna dengan role karyawan.
+      tags:
+        - Tiket
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subjek
+                - pesan
+              properties:
+                subjek:
+                  type: string
+                  description: Subjek permasalahan
+                  example: Tinta printer tidak keluar
+                pesan:
+                  type: string
+                  description: Penjelasan detail tentang kondisi permasalahan
+                  example: Printer menyala normal, namun tinta tidak keluar saat mencetak dokumen.
+      responses:
+        "201":
+          description: Tiket berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID tiket yang dibuat
+                    example: 1
+        "400":
+          description: Request body tidak valid atau tidak dapat diproses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Kode error singkat
+                    example: invalid_json
+                  message:
+                    type: string
+                    description: Penjelasan detail mengenai error
+                    example: failed to parse JSON payload from the request body
+        "401":
+          description: Sesi tidak valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Jenis error
+                    example: unauthenticated
+                  message:
+                    type: string
+                    description: Penjelasan error
+                    example: invalid session
+        "403":
+          description: Tidak memiliki akses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Jenis error
+                    example: forbidden
+                  message:
+                    type: string
+                    description: Penjelasan error
+                    example: the user's role does not have permission to perform this action.
+        "422":
+          description: Terdapat field yang tidak valid
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Nama field yang salah
+                      example: password
+                    error:
+                      type: string
+                      description: Kesalahan
+                      example: min_length_8
+                    message:
+                      type: string
+                      description: Penjelasan kesalahan
+                      example: must be at least 8 characters long
+        "500":
+          description: Terjadi kesalahan pada server
