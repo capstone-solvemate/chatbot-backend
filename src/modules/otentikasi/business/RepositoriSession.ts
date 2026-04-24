@@ -47,7 +47,7 @@ export class RepositoriSession {
 
   async updatePenggunaTerotentikasi(idSession: string, data: { idPengguna: number; peran: PeranPengguna } | null): Promise<void> {
     await ModelSession.update({
-      id_pengguna: data?.idPengguna,
+      id_pengguna: data?.idPengguna ?? null,
       peran_pengguna: (data !== null) ? peranPenggunaToInt(data!.peran) : null,
     }, {
       where: {

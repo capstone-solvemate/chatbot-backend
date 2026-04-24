@@ -3,6 +3,7 @@ export enum UnauthenticatedReason {
   InvalidPassword,
   InvalidToken,
   NoToken,
+  InvalidRole,
 }
 
 export class UnauthenticatedError extends Error {

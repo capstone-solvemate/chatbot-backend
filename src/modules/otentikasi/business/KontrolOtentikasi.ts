@@ -22,7 +22,15 @@ export class KontrolOtentikasi {
   private readonly repositoriPengguna = RepositoriPengguna.instance;
   private readonly repositoriSession = RepositoriSession.instance;
 
-  async loginKaryawan(req: Request, res: Response) {
+  async loginKaryawan(req: Request, res: Response): Promise<void> {
+    await this.login(req, res, PeranPengguna.Karyawan);
+  }
+
+  async loginAdmin(req: Request, res: Response): Promise<void> {
+    await this.login(req, res, PeranPengguna.Admin);
+  }
+
+  private async login(req: Request, res: Response, peran: PeranPengguna): Promise<void> {
     const loginDto = validasiLogin(req);
     const pengguna = await this.repositoriPengguna.getPenggunaByEmail(loginDto.email);
     if (!pengguna) {
@@ -32,11 +40,13 @@ export class KontrolOtentikasi {
       throw new UnauthenticatedError(UnauthenticatedReason.InvalidPassword, loginDto.email);
     }
 
-    // TODO: Cek peran pengguna
+    if (!pengguna.peran.includes(peran)) {
+      throw new UnauthenticatedError(UnauthenticatedReason.InvalidRole, loginDto.email);
+    }
 
     await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, {
       idPengguna: pengguna.id,
-      peran: PeranPengguna.Karyawan,
+      peran,
     });
 
     res.sendStatus(204);
@@ -57,6 +67,11 @@ export class KontrolOtentikasi {
       peran: peranPenggunaToString(req.sesiPengguna!.peranPengguna!),
     };
     res.json(resp);
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, null);
+    res.sendStatus(204);
   }
 
   async tanganiSessionTidakValid(req: Request, res: Response): Promise<void> {
