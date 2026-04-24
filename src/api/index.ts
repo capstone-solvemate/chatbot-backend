@@ -3,6 +3,7 @@ import express from "express";
 import type MessageResponse from "../interfaces/message-response.js";
 
 import emojis from "./emojis.js";
+import { routerKategori } from "./kategori.js";
 import { routerKategoriAdmin } from "./kategoriAdmin.js";
 import { routerOtentikasi } from "./otentikasi.js";
 
@@ -16,6 +17,8 @@ router.get<object, MessageResponse>("/", (req, res) => {
 
 router.use("/emojis", emojis);
 router.use("/auth", routerOtentikasi);
+router.use("/categories", routerKategori);
+
 router.use("/admin/categories", routerKategoriAdmin);
 
 export default router;
