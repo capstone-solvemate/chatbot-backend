@@ -69,6 +69,11 @@ export class KontrolOtentikasi {
     res.json(resp);
   }
 
+  async logout(req: Request, res: Response): Promise<void> {
+    await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, null);
+    res.sendStatus(204);
+  }
+
   async tanganiSessionTidakValid(req: Request, res: Response): Promise<void> {
     const session = new Session(
       "",

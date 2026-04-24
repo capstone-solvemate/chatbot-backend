@@ -12,4 +12,5 @@ const kontrolOtentikasi = KontrolOtentikasi.instance;
 routerOtentikasi.post("/login/employee", (req, res) => kontrolOtentikasi.loginKaryawan(req, res));
 routerOtentikasi.post("/login/admin", (req, res) => kontrolOtentikasi.loginAdmin(req, res));
 
+routerOtentikasi.post("/logout", auth([PeranPengguna.Admin, PeranPengguna.Karyawan]), (req, res) => kontrolOtentikasi.logout(req, res));
 routerOtentikasi.get("/me", auth([PeranPengguna.Admin, PeranPengguna.Karyawan]), (req: Request, res: Response) => kontrolOtentikasi.getInfoPengguna(req, res));
