@@ -1,16 +1,18 @@
 import type { Request, Response } from "express";
 
 import * as bcrypt from "bcrypt";
+import * as uuid from "uuid";
+
+import { InvalidCsrfToken } from "~/core/types/InvalidCsrfTokenError.js";
 
 import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
 
 import { UnauthenticatedError, UnauthenticatedReason } from "../../../core/types/UnauthenticatedError.js";
 import { RepositoriPengguna } from "../data/RepositoriPengguna.js";
-import { RepositoriToken } from "../data/RepositoriToken.js";
-import { REFRESH_TOKEN_TIMEOUT } from "../domain/constants.js";
+import { CSRF_TOKEN_COOKIE_KEY, SESSION_COOKIE_KEY } from "../domain/constants.js";
 import { PeranPengguna, peranPenggunaToString } from "../domain/PeranPengguna.js";
-import { RefreshToken } from "../domain/RefreshToken.js";
-import { AuthTokenService } from "./AuthTokenService.js";
+import { Session } from "../domain/Session.js";
+import { RepositoriSession } from "./RepositoriSession.js";
 import { validasiLogin } from "./validators.js";
 
 export class KontrolOtentikasi {
@@ -18,10 +20,17 @@ export class KontrolOtentikasi {
   static readonly instance = new KontrolOtentikasi();
 
   private readonly repositoriPengguna = RepositoriPengguna.instance;
-  private readonly authTokenService = AuthTokenService.instance;
-  private readonly repositoriToken = RepositoriToken.instance;
+  private readonly repositoriSession = RepositoriSession.instance;
 
-  async loginKaryawan(req: Request, res: Response) {
+  async loginKaryawan(req: Request, res: Response): Promise<void> {
+    await this.login(req, res, PeranPengguna.Karyawan);
+  }
+
+  async loginAdmin(req: Request, res: Response): Promise<void> {
+    await this.login(req, res, PeranPengguna.Admin);
+  }
+
+  private async login(req: Request, res: Response, peran: PeranPengguna): Promise<void> {
     const loginDto = validasiLogin(req);
     const pengguna = await this.repositoriPengguna.getPenggunaByEmail(loginDto.email);
     if (!pengguna) {
@@ -31,58 +40,73 @@ export class KontrolOtentikasi {
       throw new UnauthenticatedError(UnauthenticatedReason.InvalidPassword, loginDto.email);
     }
 
-    // TODO: Cek peran pengguna
+    if (!pengguna.peran.includes(peran)) {
+      throw new UnauthenticatedError(UnauthenticatedReason.InvalidRole, loginDto.email);
+    }
 
-    const refreshTokenExpiresAt = new Date();
-    refreshTokenExpiresAt.setSeconds(refreshTokenExpiresAt.getSeconds() + REFRESH_TOKEN_TIMEOUT);
-    const refreshTokenObj = new RefreshToken(
-      0,
-      pengguna.id,
-      PeranPengguna.Karyawan,
-      new Date(),
-      refreshTokenExpiresAt,
-      new Date(),
-    );
-    await this.repositoriToken.tambahRefreshToken(refreshTokenObj);
-
-    const accessToken = this.authTokenService.createAccessToken(
-      pengguna.id,
-      PeranPengguna.Karyawan,
-    );
-
-    const refreshToken = this.authTokenService.createRefreshToken(
-      refreshTokenObj.id,
-    );
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      path: "/api",
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+    await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, {
+      idPengguna: pengguna.id,
+      peran,
     });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      path: "/api/auth/refresh-token",
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-    });
+
     res.sendStatus(204);
   }
 
   async getInfoPengguna(req: Request, res: Response): Promise<void> {
-    const pengguna = await this.repositoriPengguna.getPenggunaById(req.sesiPengguna!.idPengguna);
+    const pengguna = await this.repositoriPengguna.getPenggunaById(req.sesiPengguna!.idPengguna!);
     if (pengguna === null) {
       throw new UnauthenticatedError(
         UnauthenticatedReason.UserNotFound,
         undefined,
-        req.sesiPengguna!.idPengguna,
+        req.sesiPengguna!.idPengguna!,
       );
     }
     const resp: InfoPenggunaDto = {
       id: pengguna.id,
       nama: pengguna.nama,
-      peran: peranPenggunaToString(req.sesiPengguna!.peran!),
+      peran: peranPenggunaToString(req.sesiPengguna!.peranPengguna!),
     };
     res.json(resp);
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, null);
+    res.sendStatus(204);
+  }
+
+  async tanganiSessionTidakValid(req: Request, res: Response): Promise<void> {
+    const session = new Session(
+      "",
+      null,
+      null,
+      uuid.v4().toString(),
+      req.headers["user-agent"] || null,
+      new Date(),
+    );
+    await this.repositoriSession.buatSession(session);
+
+    res.cookie(SESSION_COOKIE_KEY, session.id, {
+      httpOnly: true,
+      path: "/api",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
+    res.cookie(CSRF_TOKEN_COOKIE_KEY, session.csrfToken, {
+      httpOnly: false,
+      path: "/",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
+    throw new InvalidCsrfToken();
+  }
+
+  tanganiCsrfTidakValid(req: Request, res: Response): void {
+    res.cookie(CSRF_TOKEN_COOKIE_KEY, req.sesiPengguna!.csrfToken, {
+      httpOnly: false,
+      path: "/",
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
+    throw new InvalidCsrfToken();
   }
 }

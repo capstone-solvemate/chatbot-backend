@@ -1,2 +1,2 @@
-export const ACCESS_TOKEN_TIMEOUT = 30 * 60; // 30 minutes
-export const REFRESH_TOKEN_TIMEOUT = 365 * 24 * 60 * 60; // 365 days
+export const SESSION_COOKIE_KEY = "session";
+export const CSRF_TOKEN_COOKIE_KEY = "csrf_token";

@@ -17,6 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(middlewares.session);
+app.use(middlewares.csrfGuard);
 app.use(middlewares.nonProductionAlert);
 
 app.get<object, MessageResponse>("/", (req, res) => {
