@@ -72,7 +72,7 @@ export function auth(peranDiizinkan: PeranPengguna[]): (req: Request, res: Respo
     }
 
     const peran = req.sesiPengguna.peranPengguna;
-    if ((peran === null) || !(peran in peranDiizinkan)) {
+    if ((peran === null) || !(peranDiizinkan.includes(peran))) {
       next(new ForbiddenError());
       return;
     }
