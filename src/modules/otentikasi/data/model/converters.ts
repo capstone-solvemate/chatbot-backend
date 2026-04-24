@@ -1,5 +1,3 @@
-import type { RefreshToken } from "../../domain/RefreshToken.js";
-
 import { Pengguna } from "../../domain/Pengguna.js";
 import { intToPeranPengguna, peranPenggunaToInt } from "../../domain/PeranPengguna.js";
 import { Session } from "../../domain/Session.js";
@@ -12,10 +10,6 @@ export function modelToPengguna(model: any): Pengguna {
     model.password,
     [],
   );
-}
-
-export function refreshTokenToModel(refreshToken: RefreshToken): Record<string, any> {
-  return JSON.parse(JSON.stringify(refreshToken));
 }
 
 export function sessionToModel(session: Session): Record<string, any> {
