@@ -5,39 +5,79 @@ import type ErrorResponse from "./interfaces/ErrorResponse.js";
 import type { PeranPengguna } from "./modules/otentikasi/domain/PeranPengguna.js";
 
 import { ForbiddenError } from "./core/types/ForbiddenError.js";
+import { InvalidCsrfToken } from "./core/types/InvalidCsrfTokenError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "./core/types/UnauthenticatedError.js";
 import { ValidationError } from "./core/types/ValidationError.js";
-import { AuthTokenService } from "./modules/otentikasi/business/AuthTokenService.js";
+import { KontrolOtentikasi } from "./modules/otentikasi/business/KontrolOtentikasi.js";
+import { RepositoriSession } from "./modules/otentikasi/business/RepositoriSession.js";
 
-const authTokenService = AuthTokenService.instance;
+const kontrolOtentikasi = KontrolOtentikasi.instance;
+const repositoriSesison = RepositoriSession.instance;
 
-export function auth(peranDiizinkan: PeranPengguna[]): (req: Request, res: Response, next: NextFunction) => void {
-  return (req, _res, next) => {
-    const cookies = req.cookies;
-    if (!cookies.accessToken) {
-      next(new UnauthenticatedError(UnauthenticatedReason.NoToken));
-      return;
-    }
-
+export function session(req: Request, res: Response, next: NextFunction) {
+  const fn = async () => {
     try {
-      const [accessTokenId, idPengguna, peran] = authTokenService.verifikasiAccessToken(cookies.accessToken);
-
-      if ((peran === null) || !(peran in peranDiizinkan)) {
-        next(new ForbiddenError());
-        return;
+      const cookies = req.cookies;
+      if (!cookies.session) {
+        await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
       }
-
+      const session = await repositoriSesison.getById(cookies.session);
+      if (!session) {
+        await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
+      }
       req.sesiPengguna = {
-        accessTokenId,
-        idPengguna,
-        peran,
+        sessionId: session!.id,
+        csrfToken: session!.csrfToken,
+        idPengguna: session!.idPengguna,
+        peranPengguna: session!.peranPengguna,
       };
-
+      await repositoriSesison.updateAktivitas(session!.id);
       next();
     }
     catch (e: any) {
       next(e);
     }
+  };
+  fn();
+}
+
+export function csrfGuard(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (req.method === "GET") {
+      next();
+      return;
+    }
+
+    const csrfToken = req.headers["x-csrf-token"];
+    if (!csrfToken) {
+      kontrolOtentikasi.tanganiCsrfTidakValid(req, res);
+    }
+
+    if (csrfToken !== req.sesiPengguna!.csrfToken) {
+      kontrolOtentikasi.tanganiCsrfTidakValid(req, res);
+    }
+
+    next();
+  }
+  catch (e: any) {
+    next(e);
+  }
+}
+
+export function auth(peranDiizinkan: PeranPengguna[]): (req: Request, res: Response, next: NextFunction) => void {
+  return (req, _res, next) => {
+    if (!req.sesiPengguna?.idPengguna) {
+      next(new UnauthenticatedError(UnauthenticatedReason.NoToken));
+      return;
+    }
+
+    const peran = req.sesiPengguna.peranPengguna;
+    if ((peran === null) || !(peran in peranDiizinkan)) {
+      next(new ForbiddenError());
+      return;
+    }
+
+    next();
   };
 }
 
@@ -85,6 +125,13 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
     res.json({
       error: "forbidden",
       message: "your role doesn't have access to this",
+    });
+  }
+  else if (err instanceof InvalidCsrfToken) {
+    res.status(419);
+    res.json({
+      error: "expired",
+      message: "session expired or invalid csrf token",
     });
   }
   else {
