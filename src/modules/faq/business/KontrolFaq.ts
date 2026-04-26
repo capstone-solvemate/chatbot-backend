@@ -3,7 +3,8 @@ import type { Request, Response } from "express";
 import type { GetFaqsResponseDto } from "./dto/GetFaqsResponseDto.js";
 
 import { RepositoriFaq } from "../data/RepositoriFaq.js";
-import { faqToDto } from "./converters.js";
+import { faqToDto, submitDtoToFaq } from "./converters.js";
+import { validasiSubmitFaq } from "./validators.js";
 
 export class KontrolFaq {
   static readonly instance = new KontrolFaq();
@@ -21,5 +22,12 @@ export class KontrolFaq {
     };
     res.status(200);
     res.send(responseData);
+  }
+
+  async createFaq(req: Request, res: Response) {
+    const reqData = validasiSubmitFaq(req);
+    const faq = submitDtoToFaq(reqData);
+    await this.repositoriFaq.insert(faq);
+    res.sendStatus(201);
   }
 }

@@ -8,3 +8,4 @@ const kontrolFaq = KontrolFaq.instance;
 
 export const routerFaqAdmin = express.Router();
 routerFaqAdmin.get("/", auth([PeranPengguna.Admin]), (req, res) => kontrolFaq.getFaqs(req, res));
+routerFaqAdmin.post("/", auth([PeranPengguna.Admin]), (req, res) => kontrolFaq.createFaq(req, res));

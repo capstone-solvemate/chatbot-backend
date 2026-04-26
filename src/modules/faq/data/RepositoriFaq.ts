@@ -4,7 +4,7 @@ import { ModelFaq } from "~/models/ModelFaq.js";
 
 import type { Faq } from "../domain/Faq.js";
 
-import { modelToFaq } from "./converters.js";
+import { faqToModel, modelToFaq } from "./converters.js";
 
 export class RepositoriFaq {
   static readonly instance = new RepositoriFaq();
@@ -31,5 +31,10 @@ export class RepositoriFaq {
 
   async countAll(): Promise<number> {
     return await ModelFaq.count();
+  }
+
+  async insert(faq: Faq): Promise<void> {
+    const { id, ...modelFaq } = faqToModel(faq);
+    await ModelFaq.create(modelFaq);
   }
 }

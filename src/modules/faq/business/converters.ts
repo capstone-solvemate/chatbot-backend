@@ -1,4 +1,6 @@
-import type { Faq } from "../domain/Faq.js";
+import type { SubmitFaqDto } from "./dto/SubmitFaqDto.js";
+
+import { Faq } from "../domain/Faq.js";
 
 export function faqToDto(faq: Faq): Record<string, any> {
   return {
@@ -7,4 +9,8 @@ export function faqToDto(faq: Faq): Record<string, any> {
     answer: faq.answer,
     question: faq.question,
   };
+}
+
+export function submitDtoToFaq(dto: SubmitFaqDto): Faq {
+  return new Faq(0, dto.idKategori, dto.question, dto.answer);
 }
