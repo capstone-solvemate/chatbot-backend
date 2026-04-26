@@ -37,4 +37,13 @@ export class RepositoriFaq {
     const { id, ...modelFaq } = faqToModel(faq);
     await ModelFaq.create(modelFaq);
   }
+
+  async update(faq: Faq): Promise<void> {
+    const { id, ...modelFaq } = faqToModel(faq);
+    await ModelFaq.update(modelFaq, {
+      where: {
+        id,
+      },
+    });
+  }
 }

@@ -30,4 +30,20 @@ export class KontrolFaq {
     await this.repositoriFaq.insert(faq);
     res.sendStatus(201);
   }
+
+  async updateFaq(req: Request, res: Response) {
+    const idStr = req.params.id;
+    const id = Number.parseInt(idStr);
+    if (Number.isNaN(id) || id < 1) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const reqData = validasiSubmitFaq(req);
+    const faq = submitDtoToFaq(reqData);
+    faq.id = id;
+
+    await this.repositoriFaq.update(faq);
+    res.sendStatus(200);
+  }
 }
