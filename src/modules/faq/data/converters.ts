@@ -13,7 +13,7 @@ export function modelToFaq(model: any): Faq {
   return new Faq(
     model.id,
     model.id_kategori,
-    model.answer,
     model.question,
+    model.answer,
   );
 }
