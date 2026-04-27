@@ -4,7 +4,7 @@ import type { GetFaqsResponseDto } from "./dto/GetFaqsResponseDto.js";
 
 import { RepositoriFaq } from "../data/RepositoriFaq.js";
 import { faqToDto, submitDtoToFaq } from "./converters.js";
-import { validasiSubmitFaq } from "./validators.js";
+import { validasiGetFaqsRequest, validasiSubmitFaq } from "./validators.js";
 
 export class KontrolFaq {
   static readonly instance = new KontrolFaq();
@@ -13,7 +13,8 @@ export class KontrolFaq {
   private readonly repositoriFaq = RepositoriFaq.instance;
 
   async getFaqs(req: Request, res: Response) {
-    const daftarFaq = await this.repositoriFaq.getDaftarFaq(null, null);
+    const reqData = validasiGetFaqsRequest(req);
+    const daftarFaq = await this.repositoriFaq.getDaftarFaq(reqData.idkategori, reqData.query);
     const total = await this.repositoriFaq.countAll();
 
     const responseData: GetFaqsResponseDto = {
