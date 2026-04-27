@@ -46,4 +46,12 @@ export class RepositoriFaq {
       },
     });
   }
+
+  async delete(idFaq: number): Promise<void> {
+    await ModelFaq.destroy({
+      where: {
+        id: idFaq,
+      },
+    });
+  }
 }

@@ -46,4 +46,16 @@ export class KontrolFaq {
     await this.repositoriFaq.update(faq);
     res.sendStatus(200);
   }
+
+  async deleteFaq(req: Request, res: Response) {
+    const idStr = req.params.id;
+    const id = Number.parseInt(idStr);
+    if (Number.isNaN(id) || id < 1) {
+      res.sendStatus(404);
+      return;
+    }
+
+    await this.repositoriFaq.delete(id);
+    res.sendStatus(204);
+  }
 }
