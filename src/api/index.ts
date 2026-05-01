@@ -2,6 +2,7 @@ import express from "express";
 
 import type MessageResponse from "../interfaces/message-response.js";
 
+import routerChat from "./chat.js";
 import emojis from "./emojis.js";
 import { routerFaq } from "./faq.js";
 import { routerFaqAdmin } from "./faqAdmin.js";
@@ -26,5 +27,6 @@ router.use("/notifikasi", routerNotifikasi);
 
 router.use("/admin/categories", routerKategoriAdmin);
 router.use("/admin/faqs", routerFaqAdmin);
+router.use("/chat", routerChat);
 
 export default router;
