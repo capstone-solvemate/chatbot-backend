@@ -1,5 +1,19 @@
 import app from "./app.js";
+import { DI } from "./di/DI.js";
 import { env } from "./env.js";
+
+function tanganiShutdown() {
+  // Minta worker menyelesaikan antrian lalu berhenti
+  DI.provideEmailWorkerClient().berhenti();
+
+  // Beri waktu maks 10 detik untuk worker selesai
+  setTimeout(() => {
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on("SIGTERM", () => tanganiShutdown());
+process.on("SIGINT", () => tanganiShutdown());
 
 const port = env.PORT;
 const server = app.listen(port, () => {
