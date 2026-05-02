@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 
 import { Config } from "../domain/Config.js";
 import { DbConfig } from "../domain/DbConfig.js";
+import { EmailConfig } from "../domain/EmailConfig.js";
 
 export class ConfigReader {
   constructor() {
@@ -18,6 +19,14 @@ export class ConfigReader {
         process.env.DB_NAME || "",
         !!process.env.DB_SECURE,
         !!process.env.DB_IGNORE_SELF_SIGNED_CERT,
+      ),
+      new EmailConfig(
+        process.env.SMTP_HOST || "localhost",
+        Number.parseInt(process.env.SMTP_PORT || "587"),
+        process.env.SMTP_SECURE === "1",
+        process.env.SMTP_USER || "",
+        process.env.SMTP_PASSWORD || "",
+        process.env.SMTP_FROM || "",
       ),
     );
   }
