@@ -7,6 +7,7 @@ import { routerKategori } from "./kategori.js";
 import { routerKategoriAdmin } from "./kategoriAdmin.js";
 import { routerOtentikasi } from "./otentikasi.js";
 import routerChat from "./chat.js";
+import { routerKnowledgeBase } from "./knowledgeBase.js";
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ router.use("/auth", routerOtentikasi);
 router.use("/categories", routerKategori);
 
 router.use("/admin/categories", routerKategoriAdmin);
+router.use("/admin/knowledge-base", routerKnowledgeBase);
 router.use("/chat", routerChat);
 
 export default router;

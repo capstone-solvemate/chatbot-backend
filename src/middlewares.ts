@@ -18,20 +18,27 @@ export function session(req: Request, res: Response, next: NextFunction) {
   const fn = async () => {
     try {
       const cookies = req.cookies;
+
       if (!cookies.session) {
         await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
+        return; // ← MISSING: stop execution after handling
       }
+
       const session = await repositoriSesison.getById(cookies.session);
+
       if (!session) {
         await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
+        return; // ← MISSING: stop execution after handling
       }
+
       req.sesiPengguna = {
-        sessionId: session!.id,
-        csrfToken: session!.csrfToken,
-        idPengguna: session!.idPengguna,
-        peranPengguna: session!.peranPengguna,
+        sessionId: session.id,        // no need for ! now
+        csrfToken: session.csrfToken,
+        idPengguna: session.idPengguna,
+        peranPengguna: session.peranPengguna,
       };
-      await repositoriSesison.updateAktivitas(session!.id);
+
+      await repositoriSesison.updateAktivitas(session.id);
       next();
     }
     catch (e: any) {
