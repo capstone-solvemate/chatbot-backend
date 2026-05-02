@@ -1,5 +1,6 @@
 import { Pengguna } from "../../domain/Pengguna.js";
 import { intToPeranPengguna, peranPenggunaToInt } from "../../domain/PeranPengguna.js";
+import { ResetPassword } from "../../domain/ResetPassword.js";
 import { Session } from "../../domain/Session.js";
 
 export function modelToPengguna(model: any): Pengguna {
@@ -31,5 +32,20 @@ export function modelToSession(model: any): Session {
     model.csrf_token,
     model.user_agent,
     model.aktivitas_terakhir_pada,
+  );
+}
+
+export function modelToResetPassword(model: any): ResetPassword {
+  return new ResetPassword(
+    model.id,
+    model.email,
+    model.otp,
+    model.reset_token,
+    model.otp_expired_pada ? new Date(model.otp_expired_pada) : null,
+    model.reset_token_expired_pada ? new Date(model.reset_token_expired_pada) : null,
+    model.percobaan_salah,
+    model.jumlah_permintaan,
+    model.permintaan_pertama_pada ? new Date(model.permintaan_pertama_pada) : null,
+    new Date(model.dibuat_pada),
   );
 }

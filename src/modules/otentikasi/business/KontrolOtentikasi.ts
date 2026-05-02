@@ -4,16 +4,20 @@ import * as bcrypt from "bcrypt";
 import * as uuid from "uuid";
 
 import { InvalidCsrfToken } from "~/core/types/InvalidCsrfTokenError.js";
+import { TooManyRequestsError } from "~/core/types/TooManyRequestsError.js";
+import { ValidationError } from "~/core/types/ValidationError.js";
+import { DI } from "~/di/DI.js";
 
 import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
 
 import { UnauthenticatedError, UnauthenticatedReason } from "../../../core/types/UnauthenticatedError.js";
 import { RepositoriPengguna } from "../data/RepositoriPengguna.js";
+import { RepositoriResetPassword } from "../data/RepositoriResetPassword.js";
 import { CSRF_TOKEN_COOKIE_KEY, SESSION_COOKIE_KEY } from "../domain/constants.js";
 import { PeranPengguna, peranPenggunaToString } from "../domain/PeranPengguna.js";
 import { Session } from "../domain/Session.js";
 import { RepositoriSession } from "./RepositoriSession.js";
-import { validasiLogin } from "./validators.js";
+import { validasiLogin, validasiMintaOtp, validasiSimpanPassword, validasiVerifikasiOtp } from "./validators.js";
 
 export class KontrolOtentikasi {
   private constructor() {}
@@ -21,6 +25,13 @@ export class KontrolOtentikasi {
 
   private readonly repositoriPengguna = RepositoriPengguna.instance;
   private readonly repositoriSession = RepositoriSession.instance;
+  private readonly repositoriResetPassword = RepositoriResetPassword.instance;
+  private readonly emailWorkerClient = DI.provideEmailWorkerClient();
+
+  private readonly OTP_EXPIRY_MENIT = 10;
+  private readonly RESET_TOKEN_EXPIRY_MENIT = 15;
+  private readonly MAKS_PERCOBAAN_SALAH = 3;
+  private readonly BCRYPT_SALT_ROUNDS = 12;
 
   async loginKaryawan(req: Request, res: Response): Promise<void> {
     await this.login(req, res, PeranPengguna.Karyawan);
@@ -108,5 +119,159 @@ export class KontrolOtentikasi {
       secure: process.env.NODE_ENV === "production",
     });
     throw new InvalidCsrfToken();
+  }
+
+  private hasilkanOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private tambahMenit(date: Date, menit: number): Date {
+    return new Date(date.getTime() + menit * 60 * 1000);
+  }
+
+  async mintaOtp(req: Request, res: Response): Promise<void> {
+    const dto = validasiMintaOtp(req);
+
+    // Pastikan akun dengan email ini ada
+    const pengguna = await this.repositoriPengguna.getPenggunaByEmail(dto.email, false);
+    if (!pengguna) {
+      // Respon sama seperti sukses — jangan bocorkan info akun mana yang terdaftar
+      res.sendStatus(204);
+      return;
+    }
+
+    // Cek throttle
+    const existing = await this.repositoriResetPassword.getByEmail(dto.email);
+    const sekarang = new Date();
+
+    let jumlahPermintaan = 1;
+    let permintaanPertamaPada = sekarang;
+
+    if (existing) {
+      const masihDalamWindow = existing.dalamJendalaThrottle();
+
+      if (masihDalamWindow) {
+        if (existing.sudahMelebihiMaksPermintaan()) {
+          throw new TooManyRequestsError("terlalu banyak permintaan OTP. Coba lagi dalam 2 menit.");
+        }
+        jumlahPermintaan = existing.jumlahPermintaan + 1;
+        permintaanPertamaPada = existing.permintaanPertamaPada!;
+      }
+    }
+
+    const otp = this.hasilkanOtp();
+    const otpExpiredPada = this.tambahMenit(sekarang, this.OTP_EXPIRY_MENIT);
+
+    await this.repositoriResetPassword.upsertPermintaanOtp({
+      email: dto.email,
+      otp,
+      otpExpiredPada,
+      jumlahPermintaan,
+      permintaanPertamaPada,
+    });
+
+    this.emailWorkerClient.kirim({
+      to: dto.email,
+      subject: "Kode OTP Reset Password",
+      html: `
+        <p>Halo <strong>${pengguna.nama}</strong>,</p>
+        <p>Kode OTP reset password kamu adalah:</p>
+        <h2 style="letter-spacing: 8px;">${otp}</h2>
+        <p>Kode ini berlaku selama <strong>${this.OTP_EXPIRY_MENIT} menit</strong>.</p>
+        <p>Jika kamu tidak meminta reset password, abaikan email ini.</p>
+      `,
+    });
+
+    res.sendStatus(204);
+  }
+
+  async verifikasiOtp(req: Request, res: Response): Promise<void> {
+    const dto = validasiVerifikasiOtp(req);
+
+    const data = await this.repositoriResetPassword.getByEmail(dto.email);
+
+    if (!data || !data.otp) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "invalid_otp",
+        message: "OTP tidak valid atau sudah kedaluwarsa.",
+      }]);
+    }
+
+    // Cek apakah sudah melebihi maks percobaan salah
+    if (data.sudahMelebihiMaksPercobaanSalah()) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "otp_locked",
+        message: "OTP terkunci karena terlalu banyak percobaan salah. Minta OTP baru.",
+      }]);
+    }
+
+    // Cek expiry
+    if (!data.otpMasihBerlaku()) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "otp_expired",
+        message: "OTP sudah kedaluwarsa. Minta OTP baru.",
+      }]);
+    }
+
+    // Cek OTP
+    if (data.otp !== dto.otp) {
+      await this.repositoriResetPassword.incrementPercobaanSalah(dto.email);
+
+      const sisaPercobaan = this.MAKS_PERCOBAAN_SALAH - (data.percobaanSalah + 1);
+      throw new ValidationError([{
+        field: "otp",
+        error: "wrong_otp",
+        message: `OTP salah. Sisa percobaan: ${sisaPercobaan}.`,
+      }]);
+    }
+
+    // OTP benar — buat reset token
+    const resetToken = uuid.v4().toString();
+    const resetTokenExpiredPada = this.tambahMenit(new Date(), this.RESET_TOKEN_EXPIRY_MENIT);
+
+    await this.repositoriResetPassword.updateSetelahOtpVerified(dto.email, resetToken, resetTokenExpiredPada);
+
+    res.json({ reset_token: resetToken });
+  }
+
+  async simpanPassword(req: Request, res: Response): Promise<void> {
+    const dto = validasiSimpanPassword(req);
+
+    if (dto.passwordBaru !== dto.konfirmasiPassword) {
+      throw new ValidationError([{
+        field: "konfirmasi_password",
+        error: "password_mismatch",
+        message: "konfirmasi password tidak cocok.",
+      }]);
+    }
+
+    const data = await this.repositoriResetPassword.getByResetToken(dto.resetToken);
+
+    if (!data || !data.resetToken) {
+      throw new ValidationError([{
+        field: "reset_token",
+        error: "invalid_reset_token",
+        message: "token tidak valid.",
+      }]);
+    }
+
+    if (!data.resetTokenMasihBerlaku()) {
+      throw new ValidationError([{
+        field: "reset_token",
+        error: "reset_token_expired",
+        message: "token sudah kedaluwarsa. Ulangi proses reset password.",
+      }]);
+    }
+
+    const passwordHash = await bcrypt.hash(dto.passwordBaru, this.BCRYPT_SALT_ROUNDS);
+
+    await this.repositoriPengguna.updatePassword(data.email, passwordHash);
+
+    await this.repositoriResetPassword.hapusByEmail(data.email);
+
+    res.sendStatus(204);
   }
 }

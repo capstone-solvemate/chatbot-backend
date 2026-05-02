@@ -48,4 +48,11 @@ export class RepositoriPengguna {
     const pengguna = modelToPengguna(modelPengguna);
     return pengguna;
   }
+
+  async updatePassword(email: string, passwordHash: string): Promise<void> {
+    await ModelPengguna.update(
+      { password: passwordHash },
+      { where: { email } },
+    );
+  }
 }
