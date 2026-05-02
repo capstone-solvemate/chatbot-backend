@@ -6,6 +6,7 @@ import type { PeranPengguna } from "./modules/otentikasi/domain/PeranPengguna.js
 
 import { ForbiddenError } from "./core/types/ForbiddenError.js";
 import { InvalidCsrfToken } from "./core/types/InvalidCsrfTokenError.js";
+import { TooManyRequestsError } from "./core/types/TooManyRequestsError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "./core/types/UnauthenticatedError.js";
 import { ValidationError } from "./core/types/ValidationError.js";
 import { KontrolOtentikasi } from "./modules/otentikasi/business/KontrolOtentikasi.js";
@@ -132,6 +133,13 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
     res.json({
       error: "expired",
       message: "session expired or invalid csrf token",
+    });
+  }
+  else if (err instanceof TooManyRequestsError) {
+    res.status(429);
+    res.json({
+      error: "too_many_requests",
+      message: err.message,
     });
   }
   else {
