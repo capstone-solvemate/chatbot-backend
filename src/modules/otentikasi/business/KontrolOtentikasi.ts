@@ -5,6 +5,7 @@ import * as uuid from "uuid";
 
 import { InvalidCsrfToken } from "~/core/types/InvalidCsrfTokenError.js";
 import { TooManyRequestsError } from "~/core/types/TooManyRequestsError.js";
+import { ValidationError } from "~/core/types/ValidationError.js";
 import { DI } from "~/di/DI.js";
 
 import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
@@ -16,7 +17,7 @@ import { CSRF_TOKEN_COOKIE_KEY, SESSION_COOKIE_KEY } from "../domain/constants.j
 import { PeranPengguna, peranPenggunaToString } from "../domain/PeranPengguna.js";
 import { Session } from "../domain/Session.js";
 import { RepositoriSession } from "./RepositoriSession.js";
-import { validasiLogin, validasiMintaOtp, validasiVerifikasiOtp } from "./validators.js";
+import { validasiLogin, validasiMintaOtp, validasiSimpanPassword, validasiVerifikasiOtp } from "./validators.js";
 
 export class KontrolOtentikasi {
   private constructor() {}
@@ -29,6 +30,8 @@ export class KontrolOtentikasi {
 
   private readonly OTP_EXPIRY_MENIT = 10;
   private readonly RESET_TOKEN_EXPIRY_MENIT = 15;
+  private readonly MAKS_PERCOBAAN_SALAH = 3;
+  private readonly BCRYPT_SALT_ROUNDS = 12;
 
   async loginKaryawan(req: Request, res: Response): Promise<void> {
     await this.login(req, res, PeranPengguna.Karyawan);
@@ -182,96 +185,93 @@ export class KontrolOtentikasi {
     res.sendStatus(204);
   }
 
-  // async verifikasiOtp(req: Request, res: Response): Promise<void> {
-  //   const dto = validasiVerifikasiOtp(req);
+  async verifikasiOtp(req: Request, res: Response): Promise<void> {
+    const dto = validasiVerifikasiOtp(req);
 
-  //   const data = await this.repositoriResetPassword.getByEmail(dto.email);
+    const data = await this.repositoriResetPassword.getByEmail(dto.email);
 
-  //   if (!data || !data.otp) {
-  //     throw new ValidationError([{
-  //       field: "otp",
-  //       error: "invalid_otp",
-  //       message: "OTP tidak valid atau sudah kedaluwarsa.",
-  //     }]);
-  //   }
+    if (!data || !data.otp) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "invalid_otp",
+        message: "OTP tidak valid atau sudah kedaluwarsa.",
+      }]);
+    }
 
-  //   // Cek apakah sudah melebihi maks percobaan salah
-  //   if (data.sudahMelebihiMaksPercobaanSalah()) {
-  //     throw new ValidationError([{
-  //       field: "otp",
-  //       error: "otp_locked",
-  //       message: "OTP terkunci karena terlalu banyak percobaan salah. Minta OTP baru.",
-  //     }]);
-  //   }
+    // Cek apakah sudah melebihi maks percobaan salah
+    if (data.sudahMelebihiMaksPercobaanSalah()) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "otp_locked",
+        message: "OTP terkunci karena terlalu banyak percobaan salah. Minta OTP baru.",
+      }]);
+    }
 
-  //   // Cek expiry
-  //   if (!data.otpMasihBerlaku()) {
-  //     throw new ValidationError([{
-  //       field: "otp",
-  //       error: "otp_expired",
-  //       message: "OTP sudah kedaluwarsa. Minta OTP baru.",
-  //     }]);
-  //   }
+    // Cek expiry
+    if (!data.otpMasihBerlaku()) {
+      throw new ValidationError([{
+        field: "otp",
+        error: "otp_expired",
+        message: "OTP sudah kedaluwarsa. Minta OTP baru.",
+      }]);
+    }
 
-  //   // Cek OTP
-  //   if (data.otp !== dto.otp) {
-  //     await this.repositoriResetPassword.incrementPercobaanSalah(dto.email);
+    // Cek OTP
+    if (data.otp !== dto.otp) {
+      await this.repositoriResetPassword.incrementPercobaanSalah(dto.email);
 
-  //     const sisaPercobaan = MAKS_PERCOBAAN_SALAH - (data.percobaanSalah + 1);
-  //     throw new ValidationError([{
-  //       field: "otp",
-  //       error: "wrong_otp",
-  //       message: `OTP salah. Sisa percobaan: ${sisaPercobaan}.`,
-  //     }]);
-  //   }
+      const sisaPercobaan = this.MAKS_PERCOBAAN_SALAH - (data.percobaanSalah + 1);
+      throw new ValidationError([{
+        field: "otp",
+        error: "wrong_otp",
+        message: `OTP salah. Sisa percobaan: ${sisaPercobaan}.`,
+      }]);
+    }
 
-  //   // OTP benar — buat reset token
-  //   const resetToken = uuid.v4().toString();
-  //   const resetTokenExpiredPada = tambahMenit(new Date(), RESET_TOKEN_EXPIRY_MENIT);
+    // OTP benar — buat reset token
+    const resetToken = uuid.v4().toString();
+    const resetTokenExpiredPada = this.tambahMenit(new Date(), this.RESET_TOKEN_EXPIRY_MENIT);
 
-  //   await this.repositoriResetPassword.updateSetelahOtpVerified(dto.email, resetToken, resetTokenExpiredPada);
+    await this.repositoriResetPassword.updateSetelahOtpVerified(dto.email, resetToken, resetTokenExpiredPada);
 
-  //   res.json({ reset_token: resetToken });
-  // }
+    res.json({ reset_token: resetToken });
+  }
 
-  // async simpanPassword(req: Request, res: Response): Promise<void> {
-  //   const dto = validasiSimpanPassword(req);
+  async simpanPassword(req: Request, res: Response): Promise<void> {
+    const dto = validasiSimpanPassword(req);
 
-  //   if (dto.passwordBaru !== dto.konfirmasiPassword) {
-  //     throw new ValidationError([{
-  //       field: "konfirmasi_password",
-  //       error: "password_mismatch",
-  //       message: "konfirmasi password tidak cocok.",
-  //     }]);
-  //   }
+    if (dto.passwordBaru !== dto.konfirmasiPassword) {
+      throw new ValidationError([{
+        field: "konfirmasi_password",
+        error: "password_mismatch",
+        message: "konfirmasi password tidak cocok.",
+      }]);
+    }
 
-  //   const data = await this.repositoriResetPassword.getByResetToken(dto.resetToken);
+    const data = await this.repositoriResetPassword.getByResetToken(dto.resetToken);
 
-  //   if (!data || !data.resetToken) {
-  //     throw new ValidationError([{
-  //       field: "reset_token",
-  //       error: "invalid_reset_token",
-  //       message: "token tidak valid.",
-  //     }]);
-  //   }
+    if (!data || !data.resetToken) {
+      throw new ValidationError([{
+        field: "reset_token",
+        error: "invalid_reset_token",
+        message: "token tidak valid.",
+      }]);
+    }
 
-  //   if (!data.resetTokenMasihBerlaku()) {
-  //     throw new ValidationError([{
-  //       field: "reset_token",
-  //       error: "reset_token_expired",
-  //       message: "token sudah kedaluwarsa. Ulangi proses reset password.",
-  //     }]);
-  //   }
+    if (!data.resetTokenMasihBerlaku()) {
+      throw new ValidationError([{
+        field: "reset_token",
+        error: "reset_token_expired",
+        message: "token sudah kedaluwarsa. Ulangi proses reset password.",
+      }]);
+    }
 
-  //   const passwordHash = await bcrypt.hash(dto.passwordBaru, BCRYPT_SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(dto.passwordBaru, this.BCRYPT_SALT_ROUNDS);
 
-  //   await ModelPengguna.update(
-  //     { password: passwordHash },
-  //     { where: { email: data.email } },
-  //   );
+    await this.repositoriPengguna.updatePassword(data.email, passwordHash);
 
-  //   await this.repositoriResetPassword.hapusByEmail(data.email);
+    await this.repositoriResetPassword.hapusByEmail(data.email);
 
-  //   res.sendStatus(204);
-  // }
+    res.sendStatus(204);
+  }
 }
