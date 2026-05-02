@@ -12,7 +12,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "node --env-file=.env dist/src/index.js",
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "pnpm build && tsx watch --env-file=.env src/index.ts",
     "build": "tsc && tsc-alias",
     "lint": "eslint --fix src test",
     "test": "vitest run",

@@ -23,6 +23,30 @@ export class EmailWorkerClient {
   constructor(private readonly config: EmailConfig) {}
 
   /**
+   * Resolve path ke EmailWorker yang kompatibel di dua environment:
+   *
+   * - Development (`tsx watch`): file .ts dijalankan langsung, __dirname
+   *   menunjuk ke src/. Worker di-spawn pakai tsx sebagai execArgv supaya
+   *   bisa membaca file .ts.
+   *
+   * - Production (`node dist/`): file sudah dikompilasi, __dirname menunjuk
+   *   ke dist/src/. Worker di-spawn sebagai .js biasa.
+   */
+  private resolveWorkerPath(): string {
+    const isDev = __filename.endsWith(".ts");
+
+    if (isDev) {
+    // Development: __dirname → src/workers/email/
+    // Naik ke root proyek, lalu masuk ke dist/src/workers/email/
+      const projectRoot = path.resolve(__dirname, "../../../../../");
+      return path.join(projectRoot, "dist", "src", "modules", "notifikasi", "email", "business", "EmailWorker.js");
+    }
+
+    // Production: __dirname → dist/src/workers/email/
+    return path.resolve(__dirname, "EmailWorker.js");
+  }
+
+  /**
    * Kirim permintaan email ke worker thread.
    * Worker akan di-start otomatis jika belum berjalan.
    * Non-blocking — parent thread tidak menunggu email selesai dikirim.
@@ -51,7 +75,7 @@ export class EmailWorkerClient {
       return this.worker;
     }
 
-    const workerPath = path.resolve(__dirname, "EmailWorker.js");
+    const workerPath = this.resolveWorkerPath();
 
     // Config dikirim lewat workerData — worker menerimanya via workerData dari node:worker_threads
     this.worker = new Worker(workerPath, {
