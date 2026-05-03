@@ -81,7 +81,9 @@ export class KontrolOtentikasi {
   }
 
   async logout(req: Request, res: Response): Promise<void> {
-    await this.repositoriSession.updatePenggunaTerotentikasi(req.sesiPengguna!.sessionId, null);
+    const idSession = req.sesiPengguna!.sessionId;
+    await this.repositoriSession.updatePenggunaTerotentikasi(idSession, null);
+    DI.provideChatWsManager().invalidasiSession(idSession);
     res.sendStatus(204);
   }
 

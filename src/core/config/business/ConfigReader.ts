@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { Config } from "../domain/Config.js";
 import { DbConfig } from "../domain/DbConfig.js";
 import { EmailConfig } from "../domain/EmailConfig.js";
+import { RagConfig } from "../domain/RagConfig.js";
 
 export class ConfigReader {
   constructor() {
@@ -27,6 +28,10 @@ export class ConfigReader {
         process.env.SMTP_USER || "",
         process.env.SMTP_PASSWORD || "",
         process.env.SMTP_FROM || "",
+      ),
+      new RagConfig(
+        process.env.RAG_URL || "http://localhost:8000",
+        Number.parseInt(process.env.RAG_K || "5"),
       ),
     );
   }

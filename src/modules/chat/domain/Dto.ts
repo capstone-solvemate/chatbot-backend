@@ -1,22 +1,47 @@
 import { z } from "zod";
+
 import { ValidationError } from "~/core/types/ValidationError.js";
 
-export const PertanyaanSchema = z.object({
-  idChat: z.string().optional(),
+// --- Schema ---
+
+const PertanyaanSchema = z.object({
   pesan: z.string().min(1, "Pesan tidak boleh kosong"),
 });
 
-export type PertanyaanDto = z.infer<typeof PertanyaanSchema>;
+const BalasChatSchema = z.object({
+  pesan: z.string().min(1, "Pesan tidak boleh kosong"),
+});
 
-export function validasiPertanyaan(body: any): PertanyaanDto {
+// --- DTO types ---
+
+export type PertanyaanDto = z.infer<typeof PertanyaanSchema>;
+export type BalasChatDto = z.infer<typeof BalasChatSchema>;
+
+// --- Validators ---
+
+export function validasiPertanyaan(body: unknown): PertanyaanDto {
   const result = PertanyaanSchema.safeParse(body);
   if (!result.success) {
     throw new ValidationError(
-      result.error.issues.map((err: z.ZodIssue) => ({
+      result.error.issues.map(err => ({
         field: err.path.join("."),
         error: err.code,
         message: err.message,
-      }))
+      })),
+    );
+  }
+  return result.data;
+}
+
+export function validasiBalasChat(body: unknown): BalasChatDto {
+  const result = BalasChatSchema.safeParse(body);
+  if (!result.success) {
+    throw new ValidationError(
+      result.error.issues.map(err => ({
+        field: err.path.join("."),
+        error: err.code,
+        message: err.message,
+      })),
     );
   }
   return result.data;

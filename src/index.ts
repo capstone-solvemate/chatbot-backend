@@ -1,12 +1,13 @@
-import app from "./app.js";
+import { WebSocketServer } from "ws";
+
+import app, { handleWsUpgrade } from "./app.js";
 import { DI } from "./di/DI.js";
 import { env } from "./env.js";
 
 function tanganiShutdown() {
-  // Minta worker menyelesaikan antrian lalu berhenti
   DI.provideEmailWorkerClient().berhenti();
+  DI.provideRagWorkerClient().berhenti();
 
-  // Beri waktu maks 10 detik untuk worker selesai
   setTimeout(() => {
     process.exit(1);
   }, 10_000);
@@ -17,9 +18,15 @@ process.on("SIGINT", () => tanganiShutdown());
 
 const port = env.PORT;
 const server = app.listen(port, () => {
-  /* eslint-disable no-console */
   console.log(`Listening: http://localhost:${port}`);
-  /* eslint-enable no-console */
+});
+
+// WebSocket server — noServer:true agar tidak membuat HTTP server sendiri
+const wss = new WebSocketServer({ noServer: true });
+
+// Delegasikan upgrade event ke handler per-route
+server.on("upgrade", (req, socket, head) => {
+  handleWsUpgrade(wss, req, socket, head);
 });
 
 server.on("error", (err) => {

@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import net from "node:net";
 
-const SOCKET_PATH =
-  process.platform === "win32"
+const SOCKET_PATH
+  = process.platform === "win32"
     ? "\\\\.\\pipe\\epson-chatbot-rag"
     : "/var/run/epson-chatbot/rag";
 
@@ -21,7 +21,7 @@ export function queryRAG(message: string): Promise<string> {
     const client = net.createConnection(SOCKET_PATH, () => {
       // Send the query as JSON (or raw string depending on how the simulator expects it)
       // Assuming it expects JSON
-      client.write(JSON.stringify({ query: message }) + "\n");
+      client.write(`${JSON.stringify({ query: message })}\n`);
     });
 
     let data = "";
@@ -33,7 +33,8 @@ export function queryRAG(message: string): Promise<string> {
       try {
         const response = JSON.parse(data);
         resolve(response.answer || response.response || data);
-      } catch (e) {
+      }
+      catch (e) {
         resolve(data);
       }
     });

@@ -1,17 +1,22 @@
+import type { IncomingMessage } from "node:http";
+import type WebSocket from "ws";
+
 import express from "express";
 
 import { auth } from "../middlewares.js";
 import { KontrolChat } from "../modules/chat/business/KontrolChat.js";
+import { RepositoriSession } from "../modules/otentikasi/business/RepositoriSession.js";
 import { PeranPengguna } from "../modules/otentikasi/domain/PeranPengguna.js";
 
 const routerChat = express.Router();
 const kontrolChat = KontrolChat.instance;
+const repositoriSession = RepositoriSession.instance;
 
 /**
  * @swagger
  * /api/chat:
  *   post:
- *     summary: Mengajukan pertanyaan ke asisten (RAG)
+ *     summary: Membuat sesi chat baru dan mengajukan pertanyaan pertama
  *     tags: [Chat]
  *     security:
  *       - csrfAuth: []
@@ -24,22 +29,49 @@ const kontrolChat = KontrolChat.instance;
  *             required:
  *               - pesan
  *             properties:
- *               idChat:
- *                 type: string
- *                 description: Kosongkan jika ingin membuat sesi chat baru
  *               pesan:
  *                 type: string
- *                 description: Pertanyaan Anda
  *     responses:
  *       200:
- *         description: Berhasil mendapatkan jawaban
- *       404:
- *         description: Sesi chat tidak ditemukan
- *       503:
- *         description: Simulator RAG tidak berjalan
+ *         description: Sesi chat berhasil dibuat, pertanyaan masuk antrian RAG
  */
 routerChat.post("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
   kontrolChat.submitPertanyaan(req, res).catch(next);
+});
+
+/**
+ * @swagger
+ * /api/chat/{idChat}:
+ *   post:
+ *     summary: Membalas pesan dalam sesi chat yang sudah ada
+ *     tags: [Chat]
+ *     security:
+ *       - csrfAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: idChat
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - pesan
+ *             properties:
+ *               pesan:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Pesan tersimpan, jawaban masuk antrian RAG
+ *       404:
+ *         description: Sesi chat tidak ditemukan
+ */
+routerChat.post("/:idChat", auth([PeranPengguna.Karyawan]), (req, res, next) => {
+  kontrolChat.balasChat(req, res).catch(next);
 });
 
 /**
@@ -75,5 +107,36 @@ routerChat.get("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
 routerChat.get("/:id", auth([PeranPengguna.Karyawan]), (req, res, next) => {
   kontrolChat.getDetailChat(req, res).catch(next);
 });
+
+/**
+ * Handler upgrade WebSocket untuk /api/chat/:idChat/ws
+ * Dipanggil dari app.ts saat HTTP upgrade event.
+ * Tidak melalui Express router karena WS tidak menggunakan HTTP response biasa.
+ */
+export async function handleChatWsUpgrade(
+  ws: WebSocket,
+  req: IncomingMessage,
+  idChat: bigint,
+): Promise<void> {
+  // Baca session dari cookie
+  const cookieHeader = req.headers.cookie ?? "";
+  const cookies = Object.fromEntries(
+    cookieHeader.split(";").map(c => c.trim().split("=").map(decodeURIComponent)),
+  );
+  const sessionId = cookies.session;
+
+  if (!sessionId) {
+    ws.close(4001, "Unauthenticated");
+    return;
+  }
+
+  const session = await repositoriSession.getById(sessionId);
+  if (!session || !session.idPengguna || session.peranPengguna !== PeranPengguna.Karyawan) {
+    ws.close(4001, "Unauthenticated");
+    return;
+  }
+
+  await kontrolChat.handleWsConnect(ws, idChat, session.idPengguna, session.id);
+}
 
 export default routerChat;
