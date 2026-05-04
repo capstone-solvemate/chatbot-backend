@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 
 import { DI } from "~/di/DI.js";
+import { ModelPengguna } from "~/models/ModelPengguna.js";
 
 export const ModelTiket = DI.provideSequelize().define("ModelTiket", {
   id: {
@@ -45,4 +46,9 @@ export const ModelTiket = DI.provideSequelize().define("ModelTiket", {
 }, {
   tableName: "tiket",
   timestamps: false,
+});
+
+ModelTiket.belongsTo(ModelPengguna, {
+  foreignKey: "id_pembuat",
+  as: "pembuat",
 });

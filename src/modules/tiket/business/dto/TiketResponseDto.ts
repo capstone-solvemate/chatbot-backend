@@ -3,6 +3,7 @@ export type TiketResponseDto = {
   judul: string;
   deskripsi: string;
   idPembuat: number;
+  namaPembuat: string;
   idChat: string;
   idKategori: number;
   status: string;

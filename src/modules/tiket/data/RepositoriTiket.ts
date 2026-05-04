@@ -1,3 +1,8 @@
+import type { WhereOptions } from "sequelize";
+
+import { Op } from "sequelize";
+
+import { ModelPengguna } from "~/models/ModelPengguna.js";
 import { ModelPesanTiket } from "~/models/ModelPesanTiket.js";
 import { ModelTiket } from "~/models/ModelTiket.js";
 
@@ -6,6 +11,32 @@ import type { StatusTiket } from "../domain/StatusTiket.js";
 import type { Tiket } from "../domain/Tiket.js";
 
 import { modelToPesanTiket, modelToTiket } from "./converters.js";
+
+export type FilterTiket = {
+  status?: StatusTiket;
+  idKategori?: number;
+  kata?: string;
+};
+
+export type TiketDenganPembuat = {
+  tiket: Tiket;
+  namaPembuat: string;
+};
+
+const includeNamaPembuat = [
+  {
+    model: ModelPengguna,
+    as: "pembuat",
+    attributes: ["nama"],
+  },
+];
+
+function modelToTiketDenganPembuat(model: any): TiketDenganPembuat {
+  return {
+    tiket: modelToTiket(model),
+    namaPembuat: model.pembuat?.nama ?? "",
+  };
+}
 
 export class RepositoriTiket {
   static readonly instance = new RepositoriTiket();
@@ -26,24 +57,44 @@ export class RepositoriTiket {
     return modelToTiket(model);
   }
 
-  async getById(id: bigint): Promise<Tiket | null> {
-    const model = await ModelTiket.findByPk(id.toString());
-    return model ? modelToTiket(model) : null;
+  async getById(id: bigint): Promise<TiketDenganPembuat | null> {
+    const model = await ModelTiket.findByPk(id.toString(), {
+      include: includeNamaPembuat,
+    });
+    return model ? modelToTiketDenganPembuat(model) : null;
   }
 
-  async getByPembuat(idPembuat: number): Promise<Tiket[]> {
+  async getByPembuat(idPembuat: number): Promise<TiketDenganPembuat[]> {
     const models = await ModelTiket.findAll({
       where: { id_pembuat: idPembuat },
+      include: includeNamaPembuat,
       order: [["dibuat_pada", "DESC"]],
     });
-    return models.map(modelToTiket);
+    return models.map(modelToTiketDenganPembuat);
   }
 
-  async getAll(): Promise<Tiket[]> {
+  async getAll(filter: FilterTiket = {}): Promise<TiketDenganPembuat[]> {
+    const where: WhereOptions = {};
+
+    if (filter.status !== undefined) {
+      where.status = filter.status;
+    }
+    if (filter.idKategori !== undefined) {
+      where.id_kategori = filter.idKategori;
+    }
+    if (filter.kata !== undefined && filter.kata.trim() !== "") {
+      where[Op.or as any] = [
+        { judul: { [Op.like]: `%${filter.kata.trim()}%` } },
+        { deskripsi: { [Op.like]: `%${filter.kata.trim()}%` } },
+      ];
+    }
+
     const models = await ModelTiket.findAll({
+      where,
+      include: includeNamaPembuat,
       order: [["dibuat_pada", "DESC"]],
     });
-    return models.map(modelToTiket);
+    return models.map(modelToTiketDenganPembuat);
   }
 
   async updateStatus(id: bigint, status: StatusTiket): Promise<void> {
