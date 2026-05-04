@@ -10,6 +10,10 @@ export type TiketResponseDto = {
   diperbaruiPada: string;
 };
 
+export type TiketDetailResponseDto = TiketResponseDto & {
+  pesanTiket: PesanTiketResponseDto[];
+};
+
 export type PesanTiketResponseDto = {
   id: string;
   idTiket: string;

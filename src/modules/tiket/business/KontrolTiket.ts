@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 
-import type { PesanTiketResponseDto, TiketResponseDto } from "./dto/TiketResponseDto.js";
+import type { PesanTiketResponseDto, TiketDetailResponseDto, TiketResponseDto } from "./dto/TiketResponseDto.js";
 
 import { PeranPengguna } from "../../otentikasi/domain/PeranPengguna.js";
 import { RepositoriTiket } from "../data/RepositoriTiket.js";
@@ -92,7 +92,13 @@ export class KontrolTiket {
       throw new ForbiddenError();
     }
 
-    res.json({ success: true, data: tiketToDto(tiket) });
+    const pesans = await this.repositoriTiket.getPesanByTiket(id);
+    const data: TiketDetailResponseDto = {
+      ...tiketToDto(tiket),
+      pesanTiket: pesans.map(pesanToDto),
+    };
+
+    res.json({ success: true, data });
   }
 
   async updateStatusTiket(req: Request, res: Response): Promise<void> {
@@ -141,24 +147,5 @@ export class KontrolTiket {
     );
 
     res.status(201).json({ success: true, data: pesanToDto(pesan) });
-  }
-
-  async getDaftarPesanTiket(req: Request, res: Response): Promise<void> {
-    const idTiket = BigInt(req.params.id);
-    const sesi = req.sesiPengguna!;
-
-    const tiket = await this.repositoriTiket.getById(idTiket);
-    if (!tiket) {
-      res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
-      return;
-    }
-
-    const isAdmin = sesi.peranPengguna === PeranPengguna.Admin;
-    if (!isAdmin && tiket.idPembuat !== sesi.idPengguna) {
-      throw new ForbiddenError();
-    }
-
-    const pesans = await this.repositoriTiket.getPesanByTiket(idTiket);
-    res.json({ success: true, data: pesans.map(pesanToDto) });
   }
 }
