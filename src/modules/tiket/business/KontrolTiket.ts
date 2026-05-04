@@ -1,9 +1,16 @@
 import type { Request, Response } from "express";
 
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
+import { DI } from "~/di/DI.js";
 
 import type { TiketDenganPembuat } from "../data/RepositoriTiket.js";
-import type { PesanTiketResponseDto, TiketDetailResponseDto, TiketResponseDto } from "./dto/TiketResponseDto.js";
+import type {
+  PesanChatResponseDto,
+  PesanTiketResponseDto,
+  TiketAdminDetailResponseDto,
+  TiketDetailResponseDto,
+  TiketResponseDto,
+} from "./dto/TiketResponseDto.js";
 
 import { PeranPengguna } from "../../otentikasi/domain/PeranPengguna.js";
 import { RepositoriTiket } from "../data/RepositoriTiket.js";
@@ -31,7 +38,7 @@ function tiketToDto({ tiket, namaPembuat }: TiketDenganPembuat): TiketResponseDt
   };
 }
 
-function pesanToDto(pesan: PesanTiket): PesanTiketResponseDto {
+function pesanTiketToDto(pesan: PesanTiket): PesanTiketResponseDto {
   return {
     id: pesan.id.toString(),
     idTiket: pesan.idTiket.toString(),
@@ -46,6 +53,7 @@ export class KontrolTiket {
   private constructor() {}
 
   private readonly repositoriTiket = RepositoriTiket.instance;
+  private readonly repositoriChat = DI.provideRepositoriChat();
 
   async buatTiket(req: Request, res: Response): Promise<void> {
     const dto = validasiBuatTiket(req);
@@ -108,7 +116,38 @@ export class KontrolTiket {
     const pesans = await this.repositoriTiket.getPesanByTiket(id);
     const data: TiketDetailResponseDto = {
       ...tiketToDto(result),
-      pesanTiket: pesans.map(pesanToDto),
+      pesanTiket: pesans.map(pesanTiketToDto),
+    };
+
+    res.json({ success: true, data });
+  }
+
+  async getTiketByIdAdmin(req: Request, res: Response): Promise<void> {
+    const id = BigInt(req.params.id);
+
+    const [result, pesans] = await Promise.all([
+      this.repositoriTiket.getByIdLengkap(id),
+      this.repositoriTiket.getPesanByTiket(id),
+    ]);
+
+    if (!result) {
+      res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
+      return;
+    }
+
+    const historiChat = await this.repositoriChat.getHistoriPesan(result.tiket.idChat);
+
+    const data: TiketAdminDetailResponseDto = {
+      ...tiketToDto(result),
+      emailPembuat: result.emailPembuat,
+      pesanTiket: pesans.map(pesanTiketToDto),
+      historiChat: historiChat.map((p): PesanChatResponseDto => ({
+        id: p.id.toString(),
+        idChat: p.idChat.toString(),
+        pesan: p.pesan,
+        dibuatPada: p.tanggalDibuat.toISOString(),
+        dariAsisten: p.chatAsisten,
+      })),
     };
 
     res.json({ success: true, data });
@@ -159,6 +198,6 @@ export class KontrolTiket {
       new PesanTiket(0n, idTiket, sesi.idPengguna!, dto.pesan, new Date()),
     );
 
-    res.status(201).json({ success: true, data: pesanToDto(pesan) });
+    res.status(201).json({ success: true, data: pesanTiketToDto(pesan) });
   }
 }

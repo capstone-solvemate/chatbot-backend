@@ -23,6 +23,10 @@ export type TiketDenganPembuat = {
   namaPembuat: string;
 };
 
+export type TiketDenganPembuatLengkap = TiketDenganPembuat & {
+  emailPembuat: string;
+};
+
 const includeNamaPembuat = [
   {
     model: ModelPengguna,
@@ -31,10 +35,26 @@ const includeNamaPembuat = [
   },
 ];
 
+const includeInfoPembuatLengkap = [
+  {
+    model: ModelPengguna,
+    as: "pembuat",
+    attributes: ["nama", "email"],
+  },
+];
+
 function modelToTiketDenganPembuat(model: any): TiketDenganPembuat {
   return {
     tiket: modelToTiket(model),
     namaPembuat: model.pembuat?.nama ?? "",
+  };
+}
+
+function modelToTiketDenganPembuatLengkap(model: any): TiketDenganPembuatLengkap {
+  return {
+    tiket: modelToTiket(model),
+    namaPembuat: model.pembuat?.nama ?? "",
+    emailPembuat: model.pembuat?.email ?? "",
   };
 }
 
@@ -62,6 +82,13 @@ export class RepositoriTiket {
       include: includeNamaPembuat,
     });
     return model ? modelToTiketDenganPembuat(model) : null;
+  }
+
+  async getByIdLengkap(id: bigint): Promise<TiketDenganPembuatLengkap | null> {
+    const model = await ModelTiket.findByPk(id.toString(), {
+      include: includeInfoPembuatLengkap,
+    });
+    return model ? modelToTiketDenganPembuatLengkap(model) : null;
   }
 
   async getByPembuat(idPembuat: number): Promise<TiketDenganPembuat[]> {

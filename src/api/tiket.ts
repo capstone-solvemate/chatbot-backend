@@ -28,3 +28,7 @@ routerTiket.patch("/:id/status", auth(semuaPeran), (req, res, next) => {
 routerTiket.post("/:id/pesan", auth(semuaPeran), (req, res, next) => {
   kontrol.buatPesanTiket(req, res).catch(next);
 });
+
+routerTiket.get("/:id/admin", auth([PeranPengguna.Admin]), (req, res, next) => {
+  kontrol.getTiketByIdAdmin(req, res).catch(next);
+});
