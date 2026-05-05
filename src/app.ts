@@ -12,6 +12,7 @@ import morgan from "morgan";
 import type MessageResponse from "./interfaces/message-response.js";
 
 import { handleChatWsUpgrade } from "./api/chat.js";
+import { handleDashboardWsUpgrade } from "./api/dashboard.js";
 import api from "./api/index.js";
 import * as middlewares from "./middlewares.js";
 
@@ -40,6 +41,7 @@ app.use(middlewares.errorHandler);
 
 // Pola URL WebSocket yang didukung
 const WS_CHAT_PATTERN = /^\/api\/chat\/(\d+)\/ws$/;
+const WS_DASHBOARD_PATTERN = /^\/api\/dashboard\/ws(?:\?.*)?$/;
 
 /**
  * Dipanggil dari index.ts saat HTTP upgrade event.
@@ -59,6 +61,17 @@ export function handleWsUpgrade(
     wss.handleUpgrade(req, socket, head, (ws) => {
       handleChatWsUpgrade(ws, req, idChat).catch((err) => {
         console.error(new Date().toISOString(), "[WS] Upgrade error:", err);
+        ws.close(4500, "Internal server error");
+      });
+    });
+    return;
+  }
+
+  const matchDashboard = WS_DASHBOARD_PATTERN.exec(url);
+  if (matchDashboard) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      handleDashboardWsUpgrade(ws, req).catch((err) => {
+        console.error(new Date().toISOString(), "[WS Dashboard] Upgrade error:", err);
         ws.close(4500, "Internal server error");
       });
     });

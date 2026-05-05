@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
+import { DashboardEventBus } from "~/modules/dashboard/business/DashboardEventBus.js";
 
 import type { TiketDenganPembuat } from "../data/RepositoriTiket.js";
 import type {
@@ -72,6 +73,8 @@ export class KontrolTiket {
         new Date(),
       ),
     );
+
+    DashboardEventBus.tiketDibuat();
 
     res.status(201).json({ success: true, data: tiketToDto({ tiket, namaPembuat: "" }) });
   }
