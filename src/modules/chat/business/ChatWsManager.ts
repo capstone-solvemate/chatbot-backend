@@ -1,3 +1,5 @@
+import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
+
 import type { KoneksiChat } from "../domain/KoneksiChat.js";
 
 /**
@@ -5,7 +7,7 @@ import type { KoneksiChat } from "../domain/KoneksiChat.js";
  * - byChat: untuk broadcast jawaban RAG ke semua tab dengan idChat yang sama
  * - bySession: untuk invalidasi semua koneksi saat logout
  */
-export class ChatWsManager {
+export class ChatWsManager implements IWsSessionHandler {
   private constructor() {}
   static readonly instance = new ChatWsManager();
 
@@ -60,8 +62,8 @@ export class ChatWsManager {
   }
 
   /**
-   * Dipanggil saat logout — kirim notifikasi session_expired ke semua
-   * koneksi WS milik session tersebut, lalu tutup koneksinya.
+   * Dipanggil oleh WsSessionRegistry saat logout — kirim notifikasi
+   * session_expired ke semua koneksi WS milik session tersebut, lalu tutup.
    */
   invalidasiSession(idSession: string): void {
     const koneksiSet = this.bySession.get(idSession);

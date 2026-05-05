@@ -4,6 +4,7 @@ import type { Config } from "~/core/config/domain/Config";
 
 import { ConfigReader } from "~/core/config/business/ConfigReader";
 import { createSequelize } from "~/core/db/sequelize";
+import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
 import { createModelPesanChat } from "~/models/ModelPesanChat";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
@@ -77,5 +78,10 @@ export class DI {
       );
     }
     return this.ragWorkerClient;
+  }
+
+  static registerWsHandlers(): void {
+    WsSessionRegistry.instance.daftarkan(ChatWsManager.instance);
+    // WsSessionRegistry.instance.daftarkan(DashboardWsManager.instance);
   }
 }

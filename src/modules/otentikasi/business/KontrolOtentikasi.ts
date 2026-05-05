@@ -6,6 +6,7 @@ import * as uuid from "uuid";
 import { InvalidCsrfToken } from "~/core/types/InvalidCsrfTokenError.js";
 import { TooManyRequestsError } from "~/core/types/TooManyRequestsError.js";
 import { ValidationError } from "~/core/types/ValidationError.js";
+import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry.js";
 import { DI } from "~/di/DI.js";
 
 import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
@@ -83,7 +84,11 @@ export class KontrolOtentikasi {
   async logout(req: Request, res: Response): Promise<void> {
     const idSession = req.sesiPengguna!.sessionId;
     await this.repositoriSession.updatePenggunaTerotentikasi(idSession, null);
-    DI.provideChatWsManager().invalidasiSession(idSession);
+
+    // Invalidasi semua koneksi WS aktif milik session ini
+    // (chat, dashboard, dan WS lain yang terdaftar di WsSessionRegistry)
+    WsSessionRegistry.instance.invalidasiSession(idSession);
+
     res.sendStatus(204);
   }
 
@@ -134,15 +139,12 @@ export class KontrolOtentikasi {
   async mintaOtp(req: Request, res: Response): Promise<void> {
     const dto = validasiMintaOtp(req);
 
-    // Pastikan akun dengan email ini ada
     const pengguna = await this.repositoriPengguna.getPenggunaByEmail(dto.email, false);
     if (!pengguna) {
-      // Respon sama seperti sukses — jangan bocorkan info akun mana yang terdaftar
       res.sendStatus(204);
       return;
     }
 
-    // Cek throttle
     const existing = await this.repositoriResetPassword.getByEmail(dto.email);
     const sekarang = new Date();
 
@@ -200,7 +202,6 @@ export class KontrolOtentikasi {
       }]);
     }
 
-    // Cek apakah sudah melebihi maks percobaan salah
     if (data.sudahMelebihiMaksPercobaanSalah()) {
       throw new ValidationError([{
         field: "otp",
@@ -209,7 +210,6 @@ export class KontrolOtentikasi {
       }]);
     }
 
-    // Cek expiry
     if (!data.otpMasihBerlaku()) {
       throw new ValidationError([{
         field: "otp",
@@ -218,7 +218,6 @@ export class KontrolOtentikasi {
       }]);
     }
 
-    // Cek OTP
     if (data.otp !== dto.otp) {
       await this.repositoriResetPassword.incrementPercobaanSalah(dto.email);
 
@@ -230,7 +229,6 @@ export class KontrolOtentikasi {
       }]);
     }
 
-    // OTP benar — buat reset token
     const resetToken = uuid.v4().toString();
     const resetTokenExpiredPada = this.tambahMenit(new Date(), this.RESET_TOKEN_EXPIRY_MENIT);
 
