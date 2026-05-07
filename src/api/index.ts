@@ -8,6 +8,7 @@ import { routerFaq } from "./faq.js";
 import { routerFaqAdmin } from "./faqAdmin.js";
 import { routerKategori } from "./kategori.js";
 import { routerKategoriAdmin } from "./kategoriAdmin.js";
+import { routerKnowledgeBase } from "./knowledgeBase.js";
 import { routerNotifikasi } from "./notifikasi.js";
 import { routerOtentikasi } from "./otentikasi.js";
 import { routerTiket } from "./tiket.js";
@@ -29,6 +30,7 @@ router.use("/tiket", routerTiket);
 
 router.use("/admin/categories", routerKategoriAdmin);
 router.use("/admin/faqs", routerFaqAdmin);
+router.use("/admin/knowledge-base", routerKnowledgeBase);
 router.use("/chat", routerChat);
 
 export default router;
