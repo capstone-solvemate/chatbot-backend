@@ -50,6 +50,7 @@ const mockDokumen = {
   judul: "Panduan Jaringan",
   idKategori: 3,
   namaBerkas: "panduan.pdf",
+  ukuranBerkas: 2_400_000,
   path: "uploads/knowledge_base/panduan.pdf",
   status: StatusKnowledgeBase.BelumDiproses,
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -77,8 +78,10 @@ describe("GET /api/admin/knowledge-base", () => {
       judul: "Panduan Jaringan",
       idKategori: 3,
       namaBerkas: "panduan.pdf",
+      ukuranBerkas: 2_400_000,
       status: 1,
     });
+    expect(res.body[0]).not.toHaveProperty("path");
   });
 
   it("200 — mengembalikan array kosong jika tidak ada dokumen", async () => {
@@ -90,6 +93,32 @@ describe("GET /api/admin/knowledge-base", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
+  });
+
+  it("200 — filter berdasarkan idKategori", async () => {
+    repositoriMock.getSemuaDokumen.mockResolvedValue([mockDokumen]);
+
+    const res = await request(app)
+      .get("/api/admin/knowledge-base?idKategori=3")
+      .set("x-csrf-token", "test-csrf");
+
+    expect(res.status).toBe(200);
+    expect(repositoriMock.getSemuaDokumen).toHaveBeenCalledWith(
+      expect.objectContaining({ idKategori: 3 }),
+    );
+  });
+
+  it("200 — filter berdasarkan judul", async () => {
+    repositoriMock.getSemuaDokumen.mockResolvedValue([mockDokumen]);
+
+    const res = await request(app)
+      .get("/api/admin/knowledge-base?judul=Panduan")
+      .set("x-csrf-token", "test-csrf");
+
+    expect(res.status).toBe(200);
+    expect(repositoriMock.getSemuaDokumen).toHaveBeenCalledWith(
+      expect.objectContaining({ judul: "Panduan" }),
+    );
   });
 
   it("500 — jika repositori melempar error", async () => {
@@ -124,8 +153,10 @@ describe("POST /api/admin/knowledge-base/upload", () => {
       dokumen: expect.objectContaining({
         id: "1",
         judul: "Panduan Jaringan",
+        ukuranBerkas: 2_400_000,
       }),
     });
+    expect(res.body.dokumen).not.toHaveProperty("path");
   });
 
   it("422 — tidak ada file", async () => {

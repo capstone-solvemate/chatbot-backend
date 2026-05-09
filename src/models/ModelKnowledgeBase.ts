@@ -11,6 +11,7 @@ export class ModelKnowledgeBase extends Model<
   declare judul: string;
   declare id_kategori: number;
   declare nama_berkas: string;
+  declare ukuran_berkas: number;
   declare path: string;
   declare status: number;
   declare created_at: CreationOptional<Date>;
@@ -41,6 +42,11 @@ export function initModelKnowledgeBase(sequelize: Sequelize): void {
     nama_berkas: {
       type: DataTypes.TEXT,
       allowNull: false,
+    },
+    ukuran_berkas: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: 0,
     },
     path: {
       type: DataTypes.TEXT,

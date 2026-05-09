@@ -1,22 +1,39 @@
+import { Op } from "sequelize";
+
 import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
 import type { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 
 import { ModelKnowledgeBase } from "../../../models/ModelKnowledgeBase.js";
 import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
+export type FilterDokumen = {
+  idKategori?: number;
+  judul?: string;
+};
+
 export class RepositoriKnowledgeBase {
   private constructor() {}
   static readonly instance = new RepositoriKnowledgeBase();
 
   async buatDokumen(kb: KnowledgeBase): Promise<KnowledgeBase> {
-    const row = knowledgeBaseToRow(kb);
-    const doc = await ModelKnowledgeBase.create(row);
+    const doc = await ModelKnowledgeBase.create(knowledgeBaseToRow(kb));
     return modelToKnowledgeBase(doc.toJSON());
   }
 
-  async getSemuaDokumen(): Promise<KnowledgeBase[]> {
+  async getSemuaDokumen(filter: FilterDokumen = {}): Promise<KnowledgeBase[]> {
+    const where: Record<string, any> = {};
+
+    if (filter.idKategori !== undefined) {
+      where.id_kategori = filter.idKategori;
+    }
+
+    if (filter.judul !== undefined && filter.judul.trim() !== "") {
+      where.judul = { [Op.like]: `%${filter.judul.trim()}%` };
+    }
+
     const docs = await ModelKnowledgeBase.findAll({
-      order: [["createdAt", "DESC"]],
+      where,
+      order: [["created_at", "DESC"]],
     });
     return docs.map(d => modelToKnowledgeBase(d.toJSON()));
   }

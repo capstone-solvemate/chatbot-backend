@@ -18,7 +18,14 @@ export class KontrolKnowledgeBase {
   private readonly repositori = RepositoriKnowledgeBase.instance;
 
   async getSemuaDokumen(req: Request, res: Response): Promise<void> {
-    const dokumen = await this.repositori.getSemuaDokumen();
+    const idKategori = req.query.idKategori ? Number.parseInt(req.query.idKategori as string) : undefined;
+    const judul = req.query.judul as string | undefined;
+
+    const dokumen = await this.repositori.getSemuaDokumen({
+      idKategori: idKategori !== undefined && !Number.isNaN(idKategori) ? idKategori : undefined,
+      judul,
+    });
+
     const response: KnowledgeBaseResponseDto[] = dokumen.map(toResponseDto);
     res.status(200).json(response);
   }
@@ -28,10 +35,11 @@ export class KontrolKnowledgeBase {
 
     const knowledgeBase: KnowledgeBase = {
       id: 0n,
-      docId: uuidv4().toString(),
+      docId: uuidv4(),
       judul: dto.judul,
       idKategori: dto.idKategori,
       namaBerkas: dto.file.originalname,
+      ukuranBerkas: dto.file.size,
       path: dto.file.path,
       status: StatusKnowledgeBase.BelumDiproses,
     };

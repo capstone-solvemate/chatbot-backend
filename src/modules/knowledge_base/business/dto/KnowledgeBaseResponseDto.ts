@@ -4,6 +4,7 @@ export type KnowledgeBaseResponseDto = {
   judul: string;
   idKategori: number;
   namaBerkas: string;
+  ukuranBerkas: number;
   status: number;
   createdAt?: string;
   updatedAt?: string;

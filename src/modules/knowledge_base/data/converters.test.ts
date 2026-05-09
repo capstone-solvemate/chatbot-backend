@@ -22,6 +22,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
         judul: "Panduan Jaringan",
         id_kategori: 3,
         nama_berkas: "panduan.pdf",
+        ukuran_berkas: 2_400_000,
         path: "/uploads/panduan.pdf",
         status: 1,
       });
@@ -35,6 +36,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       expect(result.judul).toBe("Panduan Jaringan");
       expect(result.idKategori).toBe(3);
       expect(result.namaBerkas).toBe("panduan.pdf");
+      expect(result.ukuranBerkas).toBe(2_400_000);
       expect(result.path).toBe("/uploads/panduan.pdf");
       expect(result.status).toBe(StatusKnowledgeBase.BelumDiproses);
       expect(result.createdAt).toStrictEqual(now);
@@ -48,6 +50,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
         judul: "Laporan Bulanan",
         id_kategori: 1,
         nama_berkas: "laporan.pdf",
+        ukuran_berkas: 1_800_000,
         path: "/uploads/laporan.pdf",
         status: 1,
       });
@@ -70,6 +73,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
         judul: "Test Dokumen",
         id_kategori: 1,
         nama_berkas: "test.pdf",
+        ukuran_berkas: 0,
         path: "/test.pdf",
         status: int,
       });
@@ -86,6 +90,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
         judul: "Panduan Jaringan",
         idKategori: 3,
         namaBerkas: "panduan.pdf",
+        ukuranBerkas: 2_400_000,
         path: "/uploads/panduan.pdf",
         status: StatusKnowledgeBase.BelumDiproses,
       });
@@ -94,6 +99,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       expect(result.judul).toBe("Panduan Jaringan");
       expect(result.id_kategori).toBe(3);
       expect(result.nama_berkas).toBe("panduan.pdf");
+      expect(result.ukuran_berkas).toBe(2_400_000);
       expect(result.path).toBe("/uploads/panduan.pdf");
       expect(result.status).toBe(1);
     });
@@ -109,6 +115,7 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
         judul: "Test Dokumen",
         idKategori: 1,
         namaBerkas: "test.pdf",
+        ukuranBerkas: 0,
         path: "/test.pdf",
         status,
       });

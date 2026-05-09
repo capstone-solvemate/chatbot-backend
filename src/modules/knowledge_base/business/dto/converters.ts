@@ -10,6 +10,7 @@ export function toResponseDto(doc: KnowledgeBase): KnowledgeBaseResponseDto {
     judul: doc.judul,
     idKategori: doc.idKategori,
     namaBerkas: doc.namaBerkas,
+    ukuranBerkas: doc.ukuranBerkas,
     status: statusKnowledgeBaseToInt(doc.status),
     createdAt: doc.createdAt?.toISOString(),
     updatedAt: doc.updatedAt?.toISOString(),

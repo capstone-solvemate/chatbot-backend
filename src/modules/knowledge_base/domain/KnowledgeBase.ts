@@ -6,6 +6,7 @@ export type KnowledgeBase = {
   judul: string;
   idKategori: number;
   namaBerkas: string;
+  ukuranBerkas: number;
   path: string;
   status: StatusKnowledgeBase;
   createdAt?: Date;

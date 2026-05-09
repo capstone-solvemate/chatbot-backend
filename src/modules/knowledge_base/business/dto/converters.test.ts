@@ -1,4 +1,4 @@
-// src/modules/knowledge_base/business/dto/converters.test.ts
+// src/modules/knowledge_base/business/converters.test.ts
 import { describe, expect, it } from "vitest";
 
 import { StatusKnowledgeBase } from "../../domain/StatusKnowledgeBase.js";
@@ -10,6 +10,7 @@ const baseKnowledgeBase = {
   judul: "Panduan Jaringan",
   idKategori: 3,
   namaBerkas: "panduan.pdf",
+  ukuranBerkas: 2_400_000,
   path: "/uploads/knowledge_base/panduan.pdf",
   status: StatusKnowledgeBase.BelumDiproses,
 };
@@ -28,6 +29,7 @@ describe("toResponseDto", () => {
     expect(result.judul).toBe("Panduan Jaringan");
     expect(result.idKategori).toBe(3);
     expect(result.namaBerkas).toBe("panduan.pdf");
+    expect(result.ukuranBerkas).toBe(2_400_000);
     expect(result.status).toBe(1);
     expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
     expect(result.updatedAt).toBe("2026-01-01T00:00:00.000Z");
