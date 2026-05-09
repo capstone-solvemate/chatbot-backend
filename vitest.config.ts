@@ -15,5 +15,6 @@ export default defineConfig({
       "**/dist/**",
       "**/test/real/**",
     ],
+    reporters: "tree",
   },
 });
