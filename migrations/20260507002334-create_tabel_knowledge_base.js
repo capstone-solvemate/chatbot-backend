@@ -4,6 +4,8 @@ const NAMA_TABEL = "knowledge_base";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
+  NAMA_TABEL_KNOWLEDGE_BASE: NAMA_TABEL,
+
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable(NAMA_TABEL, {
       id: {
