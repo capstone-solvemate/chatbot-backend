@@ -3,7 +3,10 @@ import type { Request, Response } from "express";
 import fs from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 
+import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
+
 import { RepositoriKnowledgeBase } from "../data/RepositoriKnowledgeBase.js";
+import { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 
 export class KontrolKnowledgeBase {
   private constructor() {}
@@ -35,14 +38,18 @@ export class KontrolKnowledgeBase {
       }
 
       const file = req.file;
-      const doc_id = uuidv4();
+      const docId = uuidv4();
+
+      const knowledgeBase: KnowledgeBase = {
+        docId,
+        namaBerkas: file.originalname,
+        path: file.path,
+        id: 0n,
+        status: StatusKnowledgeBase.BelumDiproses,
+      };
 
       // Simpan ke database dengan status BelumDiproses
-      const dokumen = await this.repositori.buatDokumen(
-        doc_id,
-        file.originalname,
-        file.path, // Path fisik lokasi file disimpan oleh multer
-      );
+      const dokumen = await this.repositori.buatDokumen(knowledgeBase);
 
       // Konversi BigInt ke string
       const jsonSafe = { ...dokumen, id: dokumen.id.toString() };

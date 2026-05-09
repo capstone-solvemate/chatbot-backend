@@ -1,11 +1,11 @@
-export type StatusDokumen = "BelumDiproses" | "SedangDiproses" | "SelesaiDiproses";
+import type { StatusKnowledgeBase } from "./StatusKnowledgeBase.js";
 
 export type KnowledgeBase = {
   id: bigint;
-  doc_id: string;
-  nama_berkas: string;
+  docId: string;
+  namaBerkas: string;
   path: string;
-  status: StatusDokumen;
+  status: StatusKnowledgeBase;
   createdAt?: Date;
   updatedAt?: Date;
 };

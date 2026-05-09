@@ -1,33 +1,49 @@
-import { DataTypes } from "sequelize";
+import type { CreationOptional, InferAttributes, InferCreationAttributes, Sequelize } from "sequelize";
 
-import { DI } from "~/di/DI.js";
+import { DataTypes, Model } from "sequelize";
 
-export const ModelKnowledgeBase = DI.provideSequelize().define("ModelKnowledgeBase", {
-  id: {
-    type: DataTypes.BIGINT,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false,
-  },
-  doc_id: {
-    type: DataTypes.STRING(36),
-    allowNull: false,
-    unique: true,
-  },
-  nama_berkas: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-  path: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-  status: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-}, {
-  tableName: "knowledge_base",
-  timestamps: true,
-  underscored: true,
-});
+export class ModelKnowledgeBase extends Model<
+  InferAttributes<ModelKnowledgeBase, { omit: "created_at" | "updated_at" }>,
+  InferCreationAttributes<ModelKnowledgeBase, { omit: "created_at" | "updated_at" }>
+> {
+  declare id: CreationOptional<bigint>;
+  declare doc_id: string;
+  declare nama_berkas: string;
+  declare path: string;
+  declare status: number;
+  declare created_at: CreationOptional<Date>;
+  declare updated_at: CreationOptional<Date>;
+}
+
+export function initModelKnowledgeBase(sequelize: Sequelize): void {
+  ModelKnowledgeBase.init({
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    doc_id: {
+      type: DataTypes.STRING(36),
+      allowNull: false,
+      unique: true,
+    },
+    nama_berkas: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    path: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+  }, {
+    sequelize,
+    tableName: "knowledge_base",
+    timestamps: true,
+    underscored: true,
+  });
+}

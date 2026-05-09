@@ -6,6 +6,7 @@ import { ConfigReader } from "~/core/config/business/ConfigReader";
 import { createSequelize } from "~/core/db/sequelize";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
+import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelPesanChat } from "~/models/ModelPesanChat";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
@@ -25,6 +26,7 @@ export class DI {
   static provideSequelize(): Sequelize {
     if (!this.sequelize) {
       this.sequelize = createSequelize(this.provideConfig());
+      initModelKnowledgeBase(this.sequelize);
     }
     return this.sequelize;
   }
@@ -44,6 +46,14 @@ export class DI {
     }
     return this.modelPesanChat;
   }
+
+  // private static modelPesanChat: ReturnType<typeof createModelPesanChat> | null = null;
+  // static provideModelPesanChat(): ReturnType<typeof createModelPesanChat> {
+  //   if (!this.modelPesanChat) {
+  //     this.modelPesanChat = createModelPesanChat(this.provideSequelize());
+  //   }
+  //   return this.modelPesanChat;
+  // }
 
   private static repositoriChat: RepositoriChat | null = null;
   static provideRepositoriChat(): RepositoriChat {
