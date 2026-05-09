@@ -3,14 +3,15 @@ import type WebSocket from "ws";
 
 import express from "express";
 
+import { DI } from "~/di/DI.js";
+
 import { auth } from "../middlewares.js";
 import { KontrolChat } from "../modules/chat/business/KontrolChat.js";
-import { RepositoriSession } from "../modules/otentikasi/business/RepositoriSession.js";
-import { PeranPengguna } from "../modules/otentikasi/domain/PeranPengguna.js";
+import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
 const routerChat = express.Router();
 const kontrolChat = KontrolChat.instance;
-const repositoriSession = RepositoriSession.instance;
+const repositoriSession = DI.provideRepositoriSession();
 
 /**
  * @swagger

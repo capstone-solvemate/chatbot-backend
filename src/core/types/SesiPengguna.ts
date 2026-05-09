@@ -1,4 +1,4 @@
-import type { PeranPengguna } from "../../modules/otentikasi/domain/PeranPengguna.js";
+import type { PeranPengguna } from "../../modules/pengguna/domain/PeranPengguna.js";
 
 export type SesiPengguna = {
   sessionId: string;

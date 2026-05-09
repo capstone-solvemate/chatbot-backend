@@ -3,30 +3,31 @@ import type { Request, Response } from "express";
 import * as bcrypt from "bcrypt";
 import * as uuid from "uuid";
 
+import type { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna.js";
+
 import { InvalidCsrfToken } from "~/core/types/InvalidCsrfTokenError.js";
 import { TooManyRequestsError } from "~/core/types/TooManyRequestsError.js";
 import { ValidationError } from "~/core/types/ValidationError.js";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry.js";
 import { DI } from "~/di/DI.js";
 
+import type { RepositoriResetPassword } from "../data/RepositoriResetPassword.js";
 import type { InfoPenggunaDto } from "./InfoPenggunaDto.js";
+import type { RepositoriSession } from "./RepositoriSession.js";
 
 import { UnauthenticatedError, UnauthenticatedReason } from "../../../core/types/UnauthenticatedError.js";
-import { RepositoriPengguna } from "../data/RepositoriPengguna.js";
-import { RepositoriResetPassword } from "../data/RepositoriResetPassword.js";
+import { PeranPengguna, peranPenggunaToString } from "../../pengguna/domain/PeranPengguna.js";
 import { CSRF_TOKEN_COOKIE_KEY, SESSION_COOKIE_KEY } from "../domain/constants.js";
-import { PeranPengguna, peranPenggunaToString } from "../domain/PeranPengguna.js";
 import { Session } from "../domain/Session.js";
-import { RepositoriSession } from "./RepositoriSession.js";
 import { validasiLogin, validasiMintaOtp, validasiSimpanPassword, validasiVerifikasiOtp } from "./validators.js";
 
 export class KontrolOtentikasi {
-  private constructor() {}
-  static readonly instance = new KontrolOtentikasi();
+  constructor(
+    private readonly repositoriPengguna: RepositoriPengguna,
+    private readonly repositoriSession: RepositoriSession,
+    private readonly repositoriResetPassword: RepositoriResetPassword,
+  ) {}
 
-  private readonly repositoriPengguna = RepositoriPengguna.instance;
-  private readonly repositoriSession = RepositoriSession.instance;
-  private readonly repositoriResetPassword = RepositoriResetPassword.instance;
   private readonly emailWorkerClient = DI.provideEmailWorkerClient();
 
   private readonly OTP_EXPIRY_MENIT = 10;

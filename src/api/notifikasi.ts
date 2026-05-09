@@ -2,7 +2,7 @@ import * as express from "express";
 
 import { auth } from "~/middlewares";
 import { KontrolNotifikasi } from "~/modules/notifikasi/web/business/KontrolNotifikasi";
-import { PeranPengguna } from "~/modules/otentikasi/domain/PeranPengguna";
+import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna";
 
 const kontrolNotifikasi = KontrolNotifikasi.instance;
 

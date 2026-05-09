@@ -1,52 +1,54 @@
+import type { Model, ModelStatic, Sequelize } from "sequelize";
+
 import { DataTypes } from "sequelize";
 
-import { DI } from "~/di/DI";
+export function createModelSession(sequelize: Sequelize, modelPengguna: ModelStatic<Model<any, any>>): ModelStatic<Model<any, any>> {
+  const modelSession = sequelize.define(
+    "ModelSession",
+    {
+      id: {
+        type: DataTypes.STRING(36),
+        primaryKey: true,
+        allowNull: false,
+      },
 
-import { ModelPengguna } from "./ModelPengguna.js";
+      id_pengguna: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
 
-export const ModelSession = DI.provideSequelize().define(
-  "ModelSession",
-  {
-    id: {
-      type: DataTypes.STRING(36),
-      primaryKey: true,
-      allowNull: false,
+      peran_pengguna: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      csrf_token: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+
+      user_agent: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      aktivitas_terakhir_pada: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
     },
-
-    id_pengguna: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
+    {
+      tableName: "session",
+      timestamps: false,
     },
+  );
 
-    peran_pengguna: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
+  modelSession.belongsTo(modelPengguna, {
+    foreignKey: "id_pengguna",
+    as: "ModelPengguna",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  });
 
-    csrf_token: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-
-    user_agent: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-
-    aktivitas_terakhir_pada: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-  },
-  {
-    tableName: "session",
-    timestamps: false,
-  },
-);
-
-ModelSession.belongsTo(ModelPengguna, {
-  foreignKey: "id_pengguna",
-  as: "ModelPengguna",
-  onUpdate: "CASCADE",
-  onDelete: "CASCADE",
-});
+  return modelSession;
+}

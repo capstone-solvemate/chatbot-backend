@@ -1,4 +1,4 @@
-import type { PeranPengguna } from "./PeranPengguna.js";
+import type { PeranPengguna } from "../../pengguna/domain/PeranPengguna.js";
 
 export class Session {
   constructor(

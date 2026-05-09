@@ -3,14 +3,15 @@ import type WebSocket from "ws";
 
 import express from "express";
 
+import { DI } from "~/di/DI.js";
+
 import type { FilterDashboard } from "../modules/dashboard/domain/DashboardPayload.js";
 
 import { DashboardWsManager } from "../modules/dashboard/business/DashboardWsManager.js";
-import { RepositoriSession } from "../modules/otentikasi/business/RepositoriSession.js";
-import { PeranPengguna } from "../modules/otentikasi/domain/PeranPengguna.js";
+import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
 const routerDashboard = express.Router();
-const repositoriSession = RepositoriSession.instance;
+const repositoriSession = DI.provideRepositoriSession();
 const dashboardWsManager = DashboardWsManager.instance;
 
 // Tidak ada HTTP endpoint untuk dashboard saat ini.

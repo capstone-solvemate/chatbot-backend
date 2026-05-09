@@ -2,18 +2,17 @@ import type { NextFunction, Request, Response } from "express";
 
 import type { ValidationFieldError } from "./core/types/ValidationError.js";
 import type ErrorResponse from "./interfaces/ErrorResponse.js";
-import type { PeranPengguna } from "./modules/otentikasi/domain/PeranPengguna.js";
+import type { PeranPengguna } from "./modules/pengguna/domain/PeranPengguna.js";
 
 import { ForbiddenError } from "./core/types/ForbiddenError.js";
 import { InvalidCsrfToken } from "./core/types/InvalidCsrfTokenError.js";
 import { TooManyRequestsError } from "./core/types/TooManyRequestsError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "./core/types/UnauthenticatedError.js";
 import { ValidationError } from "./core/types/ValidationError.js";
-import { KontrolOtentikasi } from "./modules/otentikasi/business/KontrolOtentikasi.js";
-import { RepositoriSession } from "./modules/otentikasi/business/RepositoriSession.js";
+import { DI } from "./di/DI.js";
 
-const kontrolOtentikasi = KontrolOtentikasi.instance;
-const repositoriSesison = RepositoriSession.instance;
+const kontrolOtentikasi = DI.provideKontrolOtentikasi();
+const repositoriSesison = DI.provideRepositoriSession();
 
 export function session(req: Request, res: Response, next: NextFunction) {
   const fn = async () => {

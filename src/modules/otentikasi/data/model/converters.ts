@@ -1,17 +1,6 @@
-import { Pengguna } from "../../domain/Pengguna.js";
-import { intToPeranPengguna, peranPenggunaToInt } from "../../domain/PeranPengguna.js";
+import { intToPeranPengguna, peranPenggunaToInt } from "../../../pengguna/domain/PeranPengguna.js";
 import { ResetPassword } from "../../domain/ResetPassword.js";
 import { Session } from "../../domain/Session.js";
-
-export function modelToPengguna(model: any): Pengguna {
-  return new Pengguna(
-    model.id,
-    model.nama,
-    model.email,
-    model.password,
-    [],
-  );
-}
 
 export function sessionToModel(session: Session): Record<string, any> {
   return {

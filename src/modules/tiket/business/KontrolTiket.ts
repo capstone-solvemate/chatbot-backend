@@ -4,7 +4,7 @@ import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
 import { DashboardEventBus } from "~/modules/dashboard/business/DashboardEventBus.js";
 
-import type { TiketDenganPembuat } from "../data/RepositoriTiket.js";
+import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
 import type {
   PesanChatResponseDto,
   PesanTiketResponseDto,
@@ -13,8 +13,7 @@ import type {
   TiketResponseDto,
 } from "./dto/TiketResponseDto.js";
 
-import { PeranPengguna } from "../../otentikasi/domain/PeranPengguna.js";
-import { RepositoriTiket } from "../data/RepositoriTiket.js";
+import { PeranPengguna } from "../../pengguna/domain/PeranPengguna.js";
 import { PesanTiket } from "../domain/PesanTiket.js";
 import { intToStatusTiket, StatusTiket, statusTiketToString } from "../domain/StatusTiket.js";
 import { Tiket } from "../domain/Tiket.js";
@@ -50,10 +49,10 @@ function pesanTiketToDto(pesan: PesanTiket): PesanTiketResponseDto {
 }
 
 export class KontrolTiket {
-  static readonly instance = new KontrolTiket();
-  private constructor() {}
+  constructor(
+    private readonly repositoriTiket: RepositoriTiket,
+  ) {}
 
-  private readonly repositoriTiket = RepositoriTiket.instance;
   private readonly repositoriChat = DI.provideRepositoriChat();
 
   async buatTiket(req: Request, res: Response): Promise<void> {

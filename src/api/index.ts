@@ -4,6 +4,7 @@ import type MessageResponse from "../interfaces/message-response.js";
 
 import routerChat from "./chat.js";
 import emojis from "./emojis.js";
+import { routerPenggunaAdmin } from "./endpoints/penggunaAdmin.js";
 import { routerFaq } from "./faq.js";
 import { routerFaqAdmin } from "./faqAdmin.js";
 import { routerKategori } from "./kategori.js";
@@ -32,5 +33,6 @@ router.use("/admin/categories", routerKategoriAdmin);
 router.use("/admin/faqs", routerFaqAdmin);
 router.use("/admin/knowledge-base", routerKnowledgeBase);
 router.use("/chat", routerChat);
+router.use("/admin/pengguna", routerPenggunaAdmin);
 
 export default router;

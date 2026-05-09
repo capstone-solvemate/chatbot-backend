@@ -2,13 +2,14 @@ import type { Request, Response } from "express";
 
 import express from "express";
 
+import { DI } from "~/di/DI.js";
+
 import { auth } from "../middlewares.js";
-import { KontrolOtentikasi } from "../modules/otentikasi/business/KontrolOtentikasi.js";
-import { PeranPengguna } from "../modules/otentikasi/domain/PeranPengguna.js";
+import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
 export const routerOtentikasi = express.Router();
 
-const kontrolOtentikasi = KontrolOtentikasi.instance;
+const kontrolOtentikasi = DI.provideKontrolOtentikasi();
 routerOtentikasi.post("/login/employee", (req, res) => kontrolOtentikasi.loginKaryawan(req, res));
 routerOtentikasi.post("/login/admin", (req, res) => kontrolOtentikasi.loginAdmin(req, res));
 

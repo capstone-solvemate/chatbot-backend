@@ -1,10 +1,6 @@
-import type { WhereOptions } from "sequelize";
+import type { Model, ModelStatic, WhereOptions } from "sequelize";
 
 import { Op } from "sequelize";
-
-import { ModelPengguna } from "~/models/ModelPengguna.js";
-import { ModelPesanTiket } from "~/models/ModelPesanTiket.js";
-import { ModelTiket } from "~/models/ModelTiket.js";
 
 import type { PesanTiket } from "../domain/PesanTiket.js";
 import type { StatusTiket } from "../domain/StatusTiket.js";
@@ -27,22 +23,6 @@ export type TiketDenganPembuatLengkap = TiketDenganPembuat & {
   emailPembuat: string;
 };
 
-const includeNamaPembuat = [
-  {
-    model: ModelPengguna,
-    as: "pembuat",
-    attributes: ["nama"],
-  },
-];
-
-const includeInfoPembuatLengkap = [
-  {
-    model: ModelPengguna,
-    as: "pembuat",
-    attributes: ["nama", "email"],
-  },
-];
-
 function modelToTiketDenganPembuat(model: any): TiketDenganPembuat {
   return {
     tiket: modelToTiket(model),
@@ -59,12 +39,17 @@ function modelToTiketDenganPembuatLengkap(model: any): TiketDenganPembuatLengkap
 }
 
 export class RepositoriTiket {
-  static readonly instance = new RepositoriTiket();
-  private constructor() {}
+  constructor(
+    private readonly modelTiket: ModelStatic<Model<any, any>>,
+    private readonly modelPengguna: ModelStatic<Model<any, any>>,
+    private readonly modelPesanTiket: ModelStatic<Model<any, any>>,
+  ) {
+
+  }
 
   async buatTiket(data: Omit<Tiket, "id">): Promise<Tiket> {
     const now = new Date();
-    const model = await ModelTiket.create({
+    const model = await this.modelTiket.create({
       judul: data.judul,
       deskripsi: data.deskripsi,
       id_pembuat: data.idPembuat,
@@ -78,23 +63,35 @@ export class RepositoriTiket {
   }
 
   async getById(id: bigint): Promise<TiketDenganPembuat | null> {
-    const model = await ModelTiket.findByPk(id.toString(), {
-      include: includeNamaPembuat,
+    const model = await this.modelTiket.findByPk(id.toString(), {
+      include: {
+        model: this.modelPengguna,
+        as: "pembuat",
+        attributes: ["nama"],
+      },
     });
     return model ? modelToTiketDenganPembuat(model) : null;
   }
 
   async getByIdLengkap(id: bigint): Promise<TiketDenganPembuatLengkap | null> {
-    const model = await ModelTiket.findByPk(id.toString(), {
-      include: includeInfoPembuatLengkap,
+    const model = await this.modelTiket.findByPk(id.toString(), {
+      include: {
+        model: this.modelPengguna,
+        as: "pembuat",
+        attributes: ["nama", "email"],
+      },
     });
     return model ? modelToTiketDenganPembuatLengkap(model) : null;
   }
 
   async getByPembuat(idPembuat: number): Promise<TiketDenganPembuat[]> {
-    const models = await ModelTiket.findAll({
+    const models = await this.modelTiket.findAll({
       where: { id_pembuat: idPembuat },
-      include: includeNamaPembuat,
+      include: {
+        model: this.modelPengguna,
+        as: "pembuat",
+        attributes: ["nama"],
+      },
       order: [["dibuat_pada", "DESC"]],
     });
     return models.map(modelToTiketDenganPembuat);
@@ -116,23 +113,27 @@ export class RepositoriTiket {
       ];
     }
 
-    const models = await ModelTiket.findAll({
+    const models = await this.modelTiket.findAll({
       where,
-      include: includeNamaPembuat,
+      include: {
+        model: this.modelPengguna,
+        as: "pembuat",
+        attributes: ["nama"],
+      },
       order: [["dibuat_pada", "DESC"]],
     });
     return models.map(modelToTiketDenganPembuat);
   }
 
   async updateStatus(id: bigint, status: StatusTiket): Promise<void> {
-    await ModelTiket.update(
+    await this.modelTiket.update(
       { status, diperbarui_pada: new Date() },
       { where: { id: id.toString() } },
     );
   }
 
   async buatPesanTiket(data: Omit<PesanTiket, "id">): Promise<PesanTiket> {
-    const model = await ModelPesanTiket.create({
+    const model = await this.modelPesanTiket.create({
       id_tiket: data.idTiket.toString(),
       id_pembuat: data.idPembuat,
       pesan: data.pesan,
@@ -142,7 +143,7 @@ export class RepositoriTiket {
   }
 
   async getPesanByTiket(idTiket: bigint): Promise<PesanTiket[]> {
-    const models = await ModelPesanTiket.findAll({
+    const models = await this.modelPesanTiket.findAll({
       where: { id_tiket: idTiket.toString() },
       order: [["dibuat_pada", "ASC"]],
     });

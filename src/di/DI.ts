@@ -1,4 +1,4 @@
-import type { Sequelize } from "sequelize";
+import type { Model, ModelStatic, Sequelize } from "sequelize";
 
 import type { Config } from "~/core/config/domain/Config";
 
@@ -7,11 +7,24 @@ import { createSequelize } from "~/core/db/sequelize";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
 import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
+import { createModelPengguna } from "~/models/ModelPengguna";
+import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
 import { createModelPesanChat } from "~/models/ModelPesanChat";
+import { createModelPesanTiket } from "~/models/ModelPesanTiket";
+import { createModelResetPassword } from "~/models/ModelResetPassword";
+import { createModelSession } from "~/models/ModelSession";
+import { createModelTiket } from "~/models/ModelTiket";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
 import { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient";
+import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
+import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSession";
+import { RepositoriResetPassword } from "~/modules/otentikasi/data/RepositoriResetPassword";
+import { KontrolPengguna } from "~/modules/pengguna/business/KontrolPengguna";
+import { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna";
+import { KontrolTiket } from "~/modules/tiket/business/KontrolTiket";
+import { RepositoriTiket } from "~/modules/tiket/data/RepositoriTiket";
 
 export class DI {
   private static config: Config | null = null;
@@ -78,6 +91,106 @@ export class DI {
     return ChatWsManager.instance;
   }
 
+  private static modelPengguna: ModelStatic<Model<any, any>> | null = null;
+  static provideModelPengguna(): ModelStatic<Model<any, any>> {
+    if (!this.modelPengguna) {
+      this.modelPengguna = createModelPengguna(this.provideSequelize());
+    }
+    return this.modelPengguna;
+  }
+
+  private static modelPeranPengguna: ModelStatic<Model<any, any>> | null = null;
+  static provideModelPeranPengguna(): ModelStatic<Model<any, any>> {
+    if (!this.modelPeranPengguna) {
+      this.modelPeranPengguna = createModelPeranPengguna(this.provideSequelize(), this.provideModelPengguna());
+    }
+    return this.modelPeranPengguna;
+  }
+
+  private static repositoriPengguna: RepositoriPengguna | null = null;
+  static provideRepositoriPengguna(): RepositoriPengguna {
+    if (!this.repositoriPengguna) {
+      this.repositoriPengguna = new RepositoriPengguna(
+        this.provideModelPengguna(),
+        this.provideModelPeranPengguna(),
+      );
+    }
+    return this.repositoriPengguna;
+  }
+
+  private static kontrolPengguna: KontrolPengguna | null = null;
+  static provideKontrolPengguna(): KontrolPengguna {
+    if (!this.kontrolPengguna) {
+      this.kontrolPengguna = new KontrolPengguna(
+        this.provideRepositoriPengguna(),
+      );
+    }
+    return this.kontrolPengguna;
+  }
+
+  private static modelSession: ModelStatic<Model<any, any>> | null = null;
+  static provideModelSession(): ModelStatic<Model<any, any>> {
+    if (!this.modelSession) {
+      this.modelSession = createModelSession(
+        this.provideSequelize(),
+        this.provideModelPengguna(),
+      );
+    }
+    return this.modelSession;
+  }
+
+  private static repositoriSession: RepositoriSession | null = null;
+  static provideRepositoriSession(): RepositoriSession {
+    if (!this.repositoriSession) {
+      this.repositoriSession = new RepositoriSession(
+        this.provideModelSession(),
+      );
+    }
+    return this.repositoriSession;
+  }
+
+  private static modelResetPassword: ModelStatic<Model<any, any>> | null = null;
+  static provideModelResetPassword(): ModelStatic<Model<any, any>> {
+    if (!this.modelResetPassword) {
+      this.modelResetPassword = createModelResetPassword(
+        this.provideSequelize(),
+      );
+    }
+    return this.modelResetPassword;
+  }
+
+  private static modelPesanTiket: ModelStatic<Model<any, any>> | null = null;
+  static provideModelPesanTiket(): ModelStatic<Model<any, any>> {
+    if (!this.modelPesanTiket) {
+      this.modelPesanTiket = createModelPesanTiket(
+        this.provideSequelize(),
+      );
+    }
+    return this.modelPesanTiket;
+  }
+
+  private static repositoriResetPassword: RepositoriResetPassword | null = null;
+  static provideRepositoriResetPassword(): RepositoriResetPassword {
+    if (!this.repositoriResetPassword) {
+      this.repositoriResetPassword = new RepositoriResetPassword(
+        this.provideModelResetPassword(),
+      );
+    }
+    return this.repositoriResetPassword;
+  }
+
+  private static kontrolOtentikasi: KontrolOtentikasi | null = null;
+  static provideKontrolOtentikasi(): KontrolOtentikasi {
+    if (!this.kontrolOtentikasi) {
+      this.kontrolOtentikasi = new KontrolOtentikasi(
+        this.provideRepositoriPengguna(),
+        this.provideRepositoriSession(),
+        this.provideRepositoriResetPassword(),
+      );
+    }
+    return this.kontrolOtentikasi;
+  }
+
   private static ragWorkerClient: RagWorkerClient | null = null;
   static provideRagWorkerClient(): RagWorkerClient {
     if (!this.ragWorkerClient) {
@@ -88,6 +201,36 @@ export class DI {
       );
     }
     return this.ragWorkerClient;
+  }
+
+  private static modelTiket: ModelStatic<Model<any, any>> | null = null;
+  static provideModelTiket(): ModelStatic<Model<any, any>> {
+    if (!this.modelTiket) {
+      this.modelTiket = createModelTiket(this.provideSequelize(), this.provideModelPengguna());
+    }
+    return this.modelTiket;
+  }
+
+  private static repositoriTiket: RepositoriTiket | null = null;
+  static provideRepositoriTiket(): RepositoriTiket {
+    if (!this.repositoriTiket) {
+      this.repositoriTiket = new RepositoriTiket(
+        this.provideModelTiket(),
+        this.provideModelPengguna(),
+        this.provideModelPesanTiket(),
+      );
+    }
+    return this.repositoriTiket;
+  }
+
+  private static kontrolTiket: KontrolTiket | null = null;
+  static provideKontrolTiket(): KontrolTiket {
+    if (!this.kontrolTiket) {
+      this.kontrolTiket = new KontrolTiket(
+        this.provideRepositoriTiket(),
+      );
+    }
+    return this.kontrolTiket;
   }
 
   static registerWsHandlers(): void {

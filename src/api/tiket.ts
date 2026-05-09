@@ -1,11 +1,12 @@
 import { Router } from "express";
 
+import { DI } from "~/di/DI.js";
+
 import { auth } from "../middlewares.js";
-import { PeranPengguna } from "../modules/otentikasi/domain/PeranPengguna.js";
-import { KontrolTiket } from "../modules/tiket/business/KontrolTiket.js";
+import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
 export const routerTiket = Router();
-const kontrol = KontrolTiket.instance;
+const kontrol = DI.provideKontrolTiket();
 
 const semuaPeran = [PeranPengguna.Karyawan, PeranPengguna.Admin];
 

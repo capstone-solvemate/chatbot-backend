@@ -1,22 +1,23 @@
-import { ModelResetPassword } from "~/models/ModelResetPassword.js";
+import type { Model, ModelStatic } from "sequelize";
 
 import type { ResetPassword } from "../domain/ResetPassword.js";
 
 import { modelToResetPassword } from "./model/converters.js";
 
 export class RepositoriResetPassword {
-  private constructor() {}
-  static readonly instance = new RepositoriResetPassword();
+  constructor(
+    private readonly modelResetPassword: ModelStatic<Model<any, any>>,
+  ) {}
 
   async getByEmail(email: string): Promise<ResetPassword | null> {
-    const model = await ModelResetPassword.findOne({ where: { email } });
+    const model = await this.modelResetPassword.findOne({ where: { email } });
     if (!model)
       return null;
     return modelToResetPassword(model);
   }
 
   async getByResetToken(resetToken: string): Promise<ResetPassword | null> {
-    const model = await ModelResetPassword.findOne({ where: { reset_token: resetToken } });
+    const model = await this.modelResetPassword.findOne({ where: { reset_token: resetToken } });
     if (!model)
       return null;
     return modelToResetPassword(model);
@@ -29,7 +30,7 @@ export class RepositoriResetPassword {
     jumlahPermintaan: number;
     permintaanPertamaPada: Date;
   }): Promise<void> {
-    await ModelResetPassword.upsert({
+    await this.modelResetPassword.upsert({
       email: data.email,
       otp: data.otp,
       reset_token: null,
@@ -43,7 +44,7 @@ export class RepositoriResetPassword {
   }
 
   async updateSetelahOtpVerified(email: string, resetToken: string, resetTokenExpiredPada: Date): Promise<void> {
-    await ModelResetPassword.update({
+    await this.modelResetPassword.update({
       otp: null,
       otp_expired_pada: null,
       reset_token: resetToken,
@@ -53,10 +54,10 @@ export class RepositoriResetPassword {
   }
 
   async incrementPercobaanSalah(email: string): Promise<void> {
-    await ModelResetPassword.increment("percobaan_salah", { where: { email } });
+    await this.modelResetPassword.increment("percobaan_salah", { where: { email } });
   }
 
   async hapusByEmail(email: string): Promise<void> {
-    await ModelResetPassword.destroy({ where: { email } });
+    await this.modelResetPassword.destroy({ where: { email } });
   }
 }
