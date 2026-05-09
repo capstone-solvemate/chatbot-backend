@@ -1,5 +1,5 @@
+// src/modules/knowledge_base/data/converters.test.ts
 import { Sequelize } from "sequelize";
-// src/modules/knowledge_base/data/model/converters.test.ts
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { initModelKnowledgeBase, ModelKnowledgeBase } from "~/models/ModelKnowledgeBase.js";
@@ -8,7 +8,6 @@ import { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
 beforeAll(() => {
-  // Sequelize dialect "abstract" — cukup untuk init model tanpa koneksi DB nyata
   const sequelize = new Sequelize({ dialect: "mysql", logging: false });
   initModelKnowledgeBase(sequelize);
 });
