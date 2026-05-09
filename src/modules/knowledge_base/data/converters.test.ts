@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { initModelKnowledgeBase, ModelKnowledgeBase } from "~/models/ModelKnowledgeBase.js";
 
 import { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
-import { knowledgeBaseToModel, modelToKnowledgeBase } from "./converters.js";
+import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
 beforeAll(() => {
   // Sequelize dialect "abstract" — cukup untuk init model tanpa koneksi DB nyata
@@ -20,6 +20,8 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       const model = ModelKnowledgeBase.build({
         id: BigInt(1),
         doc_id: "abc-123",
+        judul: "Panduan Jaringan",
+        id_kategori: 3,
         nama_berkas: "panduan.pdf",
         path: "/uploads/panduan.pdf",
         status: 1,
@@ -31,6 +33,8 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
 
       expect(result.id).toBe(BigInt(1));
       expect(result.docId).toBe("abc-123");
+      expect(result.judul).toBe("Panduan Jaringan");
+      expect(result.idKategori).toBe(3);
       expect(result.namaBerkas).toBe("panduan.pdf");
       expect(result.path).toBe("/uploads/panduan.pdf");
       expect(result.status).toBe(StatusKnowledgeBase.BelumDiproses);
@@ -42,6 +46,8 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       const model = ModelKnowledgeBase.build({
         id: BigInt(2),
         doc_id: "xyz-456",
+        judul: "Laporan Bulanan",
+        id_kategori: 1,
         nama_berkas: "laporan.pdf",
         path: "/uploads/laporan.pdf",
         status: 1,
@@ -62,6 +68,8 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       const model = ModelKnowledgeBase.build({
         id: BigInt(1),
         doc_id: "test",
+        judul: "Test Dokumen",
+        id_kategori: 1,
         nama_berkas: "test.pdf",
         path: "/test.pdf",
         status: int,
@@ -71,17 +79,21 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
     });
   });
 
-  describe("fungsi knowledgeBaseToModel", () => {
+  describe("fungsi knowledgeBaseToRow", () => {
     it("memetakan semua field dengan benar", () => {
-      const result = knowledgeBaseToModel({
+      const result = knowledgeBaseToRow({
         id: BigInt(1),
         docId: "abc-123",
+        judul: "Panduan Jaringan",
+        idKategori: 3,
         namaBerkas: "panduan.pdf",
         path: "/uploads/panduan.pdf",
         status: StatusKnowledgeBase.BelumDiproses,
       });
 
       expect(result.doc_id).toBe("abc-123");
+      expect(result.judul).toBe("Panduan Jaringan");
+      expect(result.id_kategori).toBe(3);
       expect(result.nama_berkas).toBe("panduan.pdf");
       expect(result.path).toBe("/uploads/panduan.pdf");
       expect(result.status).toBe(1);
@@ -92,9 +104,11 @@ describe("converter domain KnowledgeBase ke model data dan sebaliknya", () => {
       { status: StatusKnowledgeBase.SedangDiproses, expected: 2 },
       { status: StatusKnowledgeBase.SelesaiDiproses, expected: 3 },
     ])("status $status dipetakan ke int $expected", ({ status, expected }) => {
-      const result = knowledgeBaseToModel({
+      const result = knowledgeBaseToRow({
         id: BigInt(1),
         docId: "test",
+        judul: "Test Dokumen",
+        idKategori: 1,
         namaBerkas: "test.pdf",
         path: "/test.pdf",
         status,

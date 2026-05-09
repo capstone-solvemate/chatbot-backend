@@ -98,7 +98,7 @@ const upload = multer({
  *                   type: string
  *                   example: Gagal mengambil daftar dokumen
  */
-router.get("/", (req, res) => kontrol.getSemuaDokumen(req, res));
+router.get("/", (req, res, next) => kontrol.getSemuaDokumen(req, res).catch(next));
 
 /**
  * @swagger
@@ -161,7 +161,7 @@ router.get("/", (req, res) => kontrol.getSemuaDokumen(req, res));
  *                   type: string
  *                   example: Gagal menyimpan dokumen
  */
-router.post("/upload", upload.single("file"), (req, res) => kontrol.uploadDokumen(req, res));
+router.post("/upload", upload.single("file"), (req, res, next) => kontrol.uploadDokumen(req, res).catch(next));
 
 /**
  * @swagger
@@ -217,6 +217,6 @@ router.post("/upload", upload.single("file"), (req, res) => kontrol.uploadDokume
  *                   type: string
  *                   example: Terjadi kesalahan saat menghapus dokumen
  */
-router.delete("/:id", (req, res) => kontrol.hapusDokumen(req, res));
+router.delete("/:id", (req, res, next) => kontrol.hapusDokumen(req, res).catch(next));
 
 export const routerKnowledgeBase = router;

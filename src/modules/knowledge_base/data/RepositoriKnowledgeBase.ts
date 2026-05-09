@@ -2,17 +2,15 @@ import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
 import type { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 
 import { ModelKnowledgeBase } from "../../../models/ModelKnowledgeBase.js";
-import { knowledgeBaseToModel, modelToKnowledgeBase } from "./converters.js";
+import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
 export class RepositoriKnowledgeBase {
   private constructor() {}
   static readonly instance = new RepositoriKnowledgeBase();
 
   async buatDokumen(kb: KnowledgeBase): Promise<KnowledgeBase> {
-    const { id, ...model } = knowledgeBaseToModel(kb);
-    const doc = await ModelKnowledgeBase.create({
-      ...model,
-    });
+    const row = knowledgeBaseToRow(kb);
+    const doc = await ModelKnowledgeBase.create(row);
     return modelToKnowledgeBase(doc.toJSON());
   }
 
