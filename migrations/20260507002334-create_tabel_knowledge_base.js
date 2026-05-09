@@ -1,11 +1,10 @@
 "use strict";
 
 const NAMA_TABEL = "knowledge_base";
+const { NAMA_TABEL_KATEGORI } = require("./20260424192059-create_tabel_kategori");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  NAMA_TABEL_KNOWLEDGE_BASE: NAMA_TABEL,
-
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable(NAMA_TABEL, {
       id: {
@@ -18,6 +17,20 @@ module.exports = {
         type: Sequelize.STRING(36),
         allowNull: false,
         unique: true,
+      },
+      judul: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+      },
+      id_kategori: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: NAMA_TABEL_KATEGORI,
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "RESTRICT",
       },
       nama_berkas: {
         type: Sequelize.TEXT,
@@ -43,6 +56,7 @@ module.exports = {
 
     await queryInterface.addIndex(NAMA_TABEL, ["doc_id"], { unique: true });
     await queryInterface.addIndex(NAMA_TABEL, ["status"]);
+    await queryInterface.addIndex(NAMA_TABEL, ["id_kategori"]);
   },
 
   async down(queryInterface) {
