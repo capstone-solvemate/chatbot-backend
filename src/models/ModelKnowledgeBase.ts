@@ -8,6 +8,8 @@ export class ModelKnowledgeBase extends Model<
 > {
   declare id: CreationOptional<bigint>;
   declare doc_id: string;
+  declare judul: string;
+  declare id_kategori: number;
   declare nama_berkas: string;
   declare path: string;
   declare status: number;
@@ -27,6 +29,14 @@ export function initModelKnowledgeBase(sequelize: Sequelize): void {
       type: DataTypes.STRING(36),
       allowNull: false,
       unique: true,
+    },
+    judul: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    id_kategori: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     nama_berkas: {
       type: DataTypes.TEXT,

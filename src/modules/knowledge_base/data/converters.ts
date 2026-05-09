@@ -7,6 +7,8 @@ import { intToStatusKnowledgeBase, statusKnowledgeBaseToInt } from "../domain/St
 export function knowledgeBaseToModel(kb: KnowledgeBase): ModelKnowledgeBase {
   return ModelKnowledgeBase.build({
     doc_id: kb.docId,
+    judul: kb.judul,
+    id_kategori: kb.idKategori,
     nama_berkas: kb.namaBerkas,
     path: kb.path,
     status: statusKnowledgeBaseToInt(kb.status),
@@ -17,6 +19,8 @@ export function modelToKnowledgeBase(model: any): KnowledgeBase {
   return {
     id: BigInt(model.id),
     docId: model.doc_id as string,
+    judul: model.judul as string,
+    idKategori: model.id_kategori as number,
     namaBerkas: model.nama_berkas as string,
     path: model.path as string,
     status: intToStatusKnowledgeBase(model.status as number),

@@ -37,14 +37,29 @@ export class KontrolKnowledgeBase {
         return;
       }
 
+      const { judul, idKategori } = req.body;
+
+      if (!judul || typeof judul !== "string" || judul.trim() === "") {
+        res.status(400).json({ error: "bad_request", message: "Judul dokumen tidak boleh kosong" });
+        return;
+      }
+
+      const idKategoriInt = Number.parseInt(idKategori);
+      if (!idKategori || Number.isNaN(idKategoriInt)) {
+        res.status(400).json({ error: "bad_request", message: "Kategori tidak valid" });
+        return;
+      }
+
       const file = req.file;
       const docId = uuidv4();
 
       const knowledgeBase: KnowledgeBase = {
+        id: 0n,
         docId,
+        judul: judul.trim(),
+        idKategori: idKategoriInt,
         namaBerkas: file.originalname,
         path: file.path,
-        id: 0n,
         status: StatusKnowledgeBase.BelumDiproses,
       };
 
