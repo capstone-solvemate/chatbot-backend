@@ -4,6 +4,7 @@ import type { ValidationFieldError } from "./core/types/ValidationError.js";
 import type ErrorResponse from "./interfaces/ErrorResponse.js";
 import type { PeranPengguna } from "./modules/pengguna/domain/PeranPengguna.js";
 
+import { ConflictError } from "./core/types/ConflictError.js";
 import { ForbiddenError } from "./core/types/ForbiddenError.js";
 import { InvalidCsrfToken } from "./core/types/InvalidCsrfTokenError.js";
 import { TooManyRequestsError } from "./core/types/TooManyRequestsError.js";
@@ -140,6 +141,14 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
       error: "too_many_requests",
       message: err.message,
     });
+  }
+  else if (err instanceof ConflictError) {
+    res.status(409);
+    res.json([{
+      error: "conflict",
+      message: `data duplikat pada field '${err.field}'`,
+      field: err.field,
+    }]);
   }
   else {
     const statusCode = res.statusCode !== 200 ? res.statusCode : 500;

@@ -2,6 +2,7 @@ import type { Model, ModelStatic } from "sequelize";
 
 import { Op } from "sequelize";
 
+import { ConflictError } from "~/core/types/ConflictError.js";
 import { DI } from "~/di/DI.js";
 
 import type { Pengguna } from "../domain/Pengguna.js";
@@ -62,6 +63,14 @@ export class RepositoriPengguna {
 
   async tambahPengguna(pengguna: Pengguna): Promise<void> {
     pengguna.id = 0;
+
+    const emailSudahAda = await this.modelPengguna.findOne({
+      where: { email: pengguna.email },
+      attributes: ["id"],
+    });
+    if (emailSudahAda) {
+      throw new ConflictError("email");
+    }
 
     const row = penggunaToRow(pengguna);
 
