@@ -6,6 +6,7 @@ const NAMA_TABEL = "faq";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
+  NAMA_TABEL_FAQ: NAMA_TABEL,
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable(NAMA_TABEL, {
       id: {

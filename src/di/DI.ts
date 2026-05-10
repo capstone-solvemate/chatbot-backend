@@ -7,6 +7,8 @@ import { createSequelize } from "~/core/db/sequelize";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
 import { createModelFaq } from "~/models/ModelFaq";
+import { createModelFaqSurvei } from "~/models/ModelFaqSurvei";
+import { createModelFaqViewLog } from "~/models/ModelFaqViewLog";
 import { createModelKategori } from "~/models/ModelKategori";
 import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelPengguna } from "~/models/ModelPengguna";
@@ -275,11 +277,33 @@ export class DI {
     return this.modelFaq;
   }
 
+  private static modelFaqViewLog: ModelStatic<Model<any, any>> | null = null;
+  static provideModelFaqViewLog(): ModelStatic<Model<any, any>> {
+    if (!this.modelFaqViewLog) {
+      this.modelFaqViewLog = createModelFaqViewLog(
+        this.provideSequelize(),
+        this.provideModelFaq(),
+        this.provideModelPengguna(),
+      );
+    }
+    return this.modelFaqViewLog;
+  }
+
+  private static modelFaqSurvei: ModelStatic<Model<any, any>> | null = null;
+  static provideModelFaqSurvei(): ModelStatic<Model<any, any>> {
+    if (!this.modelFaqSurvei) {
+      this.modelFaqSurvei = createModelFaqSurvei(this.provideSequelize(), this.provideModelFaq(), this.provideModelPengguna());
+    }
+    return this.modelFaqSurvei;
+  }
+
   private static repositoriFaq: RepositoriFaq | null = null;
   static provideRepositoriFaq(): RepositoriFaq {
     if (!this.repositoriFaq) {
       this.repositoriFaq = new RepositoriFaq(
         this.provideModelFaq(),
+        this.provideModelFaqViewLog(),
+        this.provideModelFaqSurvei(),
       );
     }
     return this.repositoriFaq;

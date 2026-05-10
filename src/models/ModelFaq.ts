@@ -21,6 +21,16 @@ export function createModelFaq(sequelize: Sequelize): ModelStatic<Model<any, any
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    jumlah_dilihat: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    jumlah_helpful: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   }, {
     tableName: "faq",
     timestamps: false,

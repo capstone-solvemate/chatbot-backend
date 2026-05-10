@@ -2,6 +2,17 @@ import type { SubmitFaqDto } from "./dto/SubmitFaqDto.js";
 
 import { Faq } from "../domain/Faq.js";
 
+export function faqToDtoAdmin(faq: Faq): Record<string, any> {
+  return {
+    id: faq.id,
+    idKategori: faq.idKategori,
+    answer: faq.answer,
+    question: faq.question,
+    jumlahDilihat: faq.jumlahDilihat,
+    jumlahHelpful: faq.jumlahHelpful,
+  };
+}
+
 export function faqToDto(faq: Faq): Record<string, any> {
   return {
     id: faq.id,

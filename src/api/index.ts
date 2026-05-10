@@ -4,9 +4,9 @@ import type MessageResponse from "../interfaces/message-response.js";
 
 import routerChat from "./chat.js";
 import emojis from "./emojis.js";
+import { routerFaq } from "./endpoints/faq.js";
+import { routerFaqAdmin } from "./endpoints/faqAdmin.js";
 import { routerPenggunaAdmin } from "./endpoints/penggunaAdmin.js";
-import { routerFaq } from "./faq.js";
-import { routerFaqAdmin } from "./faqAdmin.js";
 import { routerKategori } from "./kategori.js";
 import { routerKategoriAdmin } from "./kategoriAdmin.js";
 import { routerKnowledgeBase } from "./knowledgeBase.js";

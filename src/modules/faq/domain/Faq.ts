@@ -4,5 +4,7 @@ export class Faq {
     public idKategori: number,
     public question: string,
     public answer: string,
-  ) { }
+    public jumlahDilihat: number = 0,
+    public jumlahHelpful: number = 0,
+  ) {}
 }
