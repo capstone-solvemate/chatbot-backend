@@ -17,30 +17,19 @@ export class RepositoriPengguna {
   ) {}
 
   async getPenggunaAktifByEmail(email: string, besertaPeran: boolean = true): Promise<Pengguna | null> {
-    const modelPengguna = await this.modelPengguna.findOne({ where: { email } });
+    const modelPengguna = await this.modelPengguna.findOne({
+      where: { email },
+      include: besertaPeran
+        ? {
+            model: this.modelPeranPengguna,
+            as: "ModelPeranPengguna",
+          }
+        : undefined,
+    });
     if (!modelPengguna) {
       return null;
     }
     const pengguna = modelToPengguna(modelPengguna);
-
-    if (besertaPeran) {
-      const listModelPeran = await this.modelPeranPengguna.findAll({
-        where: {
-          id_pengguna: pengguna.id,
-          isActive: true,
-        },
-      });
-      for (const modelPeran of (listModelPeran as any[])) {
-        let peranInt = 0;
-        if (typeof modelPeran.peran === "number") {
-          peranInt = modelPeran.peran;
-        }
-        const peran = intToPeranPengguna(peranInt);
-        if (peran !== null) {
-          pengguna.peran.push(peran);
-        }
-      }
-    }
 
     return pengguna;
   }
