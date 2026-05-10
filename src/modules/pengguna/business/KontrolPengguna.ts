@@ -2,10 +2,12 @@ import type { Request, Response } from "express";
 
 import { hashSync } from "bcrypt";
 
+import { ValidationError } from "~/core/types/ValidationError.js";
+
 import type { RepositoriPengguna } from "../data/RepositoriPengguna.js";
 
-import { penggunaToDto, tambahPenggunaDtoToPengguna } from "./dto/converters.js";
-import { validasiDataGetPengguna, validasiDataTambahPengguna } from "./dto/validators.js";
+import { editPenggunaDtoToPengguna, penggunaToDto, tambahPenggunaDtoToPengguna } from "./dto/converters.js";
+import { validasiDataEditPengguna, validasiDataGetPengguna, validasiDataTambahPengguna } from "./dto/validators.js";
 
 export class KontrolPengguna {
   constructor(private readonly repositoriPengguna: RepositoriPengguna) {}
@@ -25,5 +27,36 @@ export class KontrolPengguna {
     const pengguna = await this.repositoriPengguna.getPengguna(reqDto.cari || null);
     const resDto = pengguna.map(p => penggunaToDto(p));
     res.status(200).send(resDto);
+  }
+
+  async editPengguna(req: Request, res: Response): Promise<void> {
+    const id = Number.parseInt(req.params.id);
+    if (Number.isNaN(id)) {
+      throw new ValidationError([{
+        field: "id",
+        error: "invalid",
+        message: "id pengguna tidak valid.",
+      }]);
+    }
+
+    const reqDto = validasiDataEditPengguna(req.body);
+
+    const existing = await this.repositoriPengguna.getPenggunaById(id);
+    if (!existing) {
+      throw new ValidationError([{
+        field: "id",
+        error: "not_found",
+        message: "pengguna tidak ditemukan.",
+      }]);
+    }
+
+    const pengguna = editPenggunaDtoToPengguna(id, reqDto);
+
+    if (reqDto.passwordBaru) {
+      pengguna.password = hashSync(reqDto.passwordBaru, 12);
+    }
+
+    await this.repositoriPengguna.editPengguna(pengguna);
+    res.sendStatus(204);
   }
 }

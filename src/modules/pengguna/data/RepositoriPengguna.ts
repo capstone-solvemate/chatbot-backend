@@ -120,4 +120,49 @@ export class RepositoriPengguna {
     const pengguna = modelPengguna.map(model => modelToPengguna(model.toJSON()));
     return pengguna;
   }
+
+  async editPengguna(pengguna: Pengguna): Promise<void> {
+    // Cek konflik email — exclude pengguna itu sendiri
+    const emailSudahAda = await this.modelPengguna.findOne({
+      where: {
+        email: pengguna.email,
+        id: { [Op.ne]: pengguna.id },
+      },
+      attributes: ["id"],
+    });
+    if (emailSudahAda) {
+      throw new ConflictError("email");
+    }
+
+    const row = penggunaToRow(pengguna);
+
+    const tx = await DI.provideSequelize().transaction();
+    try {
+      await this.modelPengguna.update(
+        {
+          nama: row.nama,
+          email: row.email,
+          isActive: pengguna.isActive,
+          ...(pengguna.password ? { password: pengguna.password } : {}),
+        },
+        { where: { id: pengguna.id }, transaction: tx },
+      );
+
+      await this.modelPeranPengguna.destroy({
+        where: { id_pengguna: pengguna.id },
+        transaction: tx,
+      });
+
+      const rowsPeran = penggunaToRowPeran(pengguna);
+      if (rowsPeran.length > 0) {
+        await this.modelPeranPengguna.bulkCreate(rowsPeran, { transaction: tx });
+      }
+
+      await tx.commit();
+    }
+    catch (e: any) {
+      await tx.rollback();
+      throw e;
+    }
+  }
 }
