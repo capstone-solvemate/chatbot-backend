@@ -157,6 +157,6 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
       error: "unknown_error",
       message: err.message,
     });
-    console.error(new Date().toISOString(), err.stack);
+    console.error(new Date().toISOString(), err);
   }
 }
