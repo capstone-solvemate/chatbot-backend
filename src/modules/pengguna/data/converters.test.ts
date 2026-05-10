@@ -13,6 +13,7 @@ describe("converter data Pengguna", () => {
         "test@example.com",
         "$2a$12$XzOl21lTGZyjJTHYm4A7WeDLhtddOYEAW0YRB4xanuDDfRWREgPmO",
         [PeranPengguna.Admin],
+        true,
       );
 
       const result = penggunaToRow(pengguna);
@@ -32,6 +33,7 @@ describe("converter data Pengguna", () => {
         "test@example.com",
         "$2a$12$XzOl21lTGZyjJTHYm4A7WeDLhtddOYEAW0YRB4xanuDDfRWREgPmO",
         [PeranPengguna.Admin],
+        true,
       );
 
       const result = penggunaToRowPeran(pengguna);
@@ -46,6 +48,7 @@ describe("converter data Pengguna", () => {
         "test@example.com",
         "$2a$12$XzOl21lTGZyjJTHYm4A7WeDLhtddOYEAW0YRB4xanuDDfRWREgPmO",
         [PeranPengguna.Admin, PeranPengguna.Karyawan],
+        true,
       );
 
       const result = penggunaToRowPeran(pengguna);
@@ -60,6 +63,7 @@ describe("converter data Pengguna", () => {
         "test@example.com",
         "$2a$12$XzOl21lTGZyjJTHYm4A7WeDLhtddOYEAW0YRB4xanuDDfRWREgPmO",
         [PeranPengguna.Admin],
+        true,
       );
 
       const result = penggunaToRowPeran(pengguna);

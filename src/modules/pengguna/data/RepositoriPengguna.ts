@@ -16,7 +16,7 @@ export class RepositoriPengguna {
     private readonly modelPeranPengguna: ModelStatic<Model<any, any>>,
   ) {}
 
-  async getPenggunaByEmail(email: string, besertaPeran: boolean = true): Promise<Pengguna | null> {
+  async getPenggunaAktifByEmail(email: string, besertaPeran: boolean = true): Promise<Pengguna | null> {
     const modelPengguna = await this.modelPengguna.findOne({ where: { email } });
     if (!modelPengguna) {
       return null;
@@ -27,6 +27,7 @@ export class RepositoriPengguna {
       const listModelPeran = await this.modelPeranPengguna.findAll({
         where: {
           id_pengguna: pengguna.id,
+          isActive: true,
         },
       });
       for (const modelPeran of (listModelPeran as any[])) {
@@ -44,8 +45,13 @@ export class RepositoriPengguna {
     return pengguna;
   }
 
-  async getPenggunaById(id: number): Promise<Pengguna | null> {
-    const modelPengguna = await this.modelPengguna.findOne({ where: { id } });
+  async getPenggunaById(id: number, harusAktif: boolean = false): Promise<Pengguna | null> {
+    const where: Record<string, any> = { id };
+    if (harusAktif) {
+      where.isActive = true;
+    }
+
+    const modelPengguna = await this.modelPengguna.findOne({ where });
     if (!modelPengguna) {
       return null;
     }

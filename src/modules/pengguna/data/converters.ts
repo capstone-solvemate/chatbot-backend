@@ -33,5 +33,6 @@ export function modelToPengguna(model: any): Pengguna {
     model.email,
     model.password,
     peran,
+    model.isActive,
   );
 }

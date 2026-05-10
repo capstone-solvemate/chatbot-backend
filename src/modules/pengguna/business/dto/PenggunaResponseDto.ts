@@ -3,4 +3,5 @@ export type PenggunaResponseDto = {
   nama: string;
   email: string;
   peran: number[];
+  isActive: boolean;
 };

@@ -45,7 +45,7 @@ export class KontrolOtentikasi {
 
   private async login(req: Request, res: Response, peran: PeranPengguna): Promise<void> {
     const loginDto = validasiLogin(req);
-    const pengguna = await this.repositoriPengguna.getPenggunaByEmail(loginDto.email);
+    const pengguna = await this.repositoriPengguna.getPenggunaAktifByEmail(loginDto.email);
     if (!pengguna) {
       throw new UnauthenticatedError(UnauthenticatedReason.UserNotFound, loginDto.email);
     }
@@ -66,7 +66,7 @@ export class KontrolOtentikasi {
   }
 
   async getInfoPengguna(req: Request, res: Response): Promise<void> {
-    const pengguna = await this.repositoriPengguna.getPenggunaById(req.sesiPengguna!.idPengguna!);
+    const pengguna = await this.repositoriPengguna.getPenggunaById(req.sesiPengguna!.idPengguna!, true);
     if (pengguna === null) {
       throw new UnauthenticatedError(
         UnauthenticatedReason.UserNotFound,
@@ -140,7 +140,7 @@ export class KontrolOtentikasi {
   async mintaOtp(req: Request, res: Response): Promise<void> {
     const dto = validasiMintaOtp(req);
 
-    const pengguna = await this.repositoriPengguna.getPenggunaByEmail(dto.email, false);
+    const pengguna = await this.repositoriPengguna.getPenggunaAktifByEmail(dto.email, false);
     if (!pengguna) {
       res.sendStatus(204);
       return;

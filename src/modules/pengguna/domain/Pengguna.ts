@@ -7,5 +7,6 @@ export class Pengguna {
     public email: string,
     public password: string,
     public peran: PeranPengguna[],
+    public isActive: boolean,
   ) {}
 }

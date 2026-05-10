@@ -23,6 +23,12 @@ export function createModelPengguna(sequelize: Sequelize): ModelStatic<Model<any
       type: DataTypes.STRING(64),
       allowNull: false,
     },
+    isActive: {
+      field: "is_active",
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   }, {
     tableName: "pengguna",
     timestamps: false,

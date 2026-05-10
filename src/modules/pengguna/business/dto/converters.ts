@@ -11,6 +11,7 @@ export function tambahPenggunaDtoToPengguna(dto: TambahPenggunaDto): Pengguna {
     dto.email,
     dto.password,
     dto.peran.map(peranInt => (intToPeranPengguna(peranInt) || PeranPengguna.Karyawan)),
+    true,
   );
 }
 
@@ -20,5 +21,6 @@ export function penggunaToDto(pengguna: Pengguna): PenggunaResponseDto {
     nama: pengguna.nama,
     email: pengguna.email,
     peran: pengguna.peran.map(peran => peranPenggunaToInt(peran)),
+    isActive: pengguna.isActive,
   };
 }
