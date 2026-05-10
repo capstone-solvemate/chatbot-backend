@@ -1,16 +1,15 @@
 import type { Request, Response } from "express";
 
+import type { RepositoriFaq } from "../data/RepositoriFaq.js";
 import type { GetFaqsResponseDto } from "./dto/GetFaqsResponseDto.js";
 
-import { RepositoriFaq } from "../data/RepositoriFaq.js";
 import { faqToDto, submitDtoToFaq } from "./converters.js";
 import { validasiGetFaqsRequest, validasiSubmitFaq } from "./validators.js";
 
 export class KontrolFaq {
-  static readonly instance = new KontrolFaq();
-  private constructor() {}
-
-  private readonly repositoriFaq = RepositoriFaq.instance;
+  constructor(
+    private readonly repositoriFaq: RepositoriFaq,
+  ) {}
 
   async getFaqs(req: Request, res: Response) {
     const reqData = validasiGetFaqsRequest(req);

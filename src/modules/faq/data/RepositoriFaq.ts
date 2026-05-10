@@ -1,14 +1,15 @@
-import { Op } from "sequelize";
+import type { Model, ModelStatic } from "sequelize";
 
-import { ModelFaq } from "~/models/ModelFaq.js";
+import { Op } from "sequelize";
 
 import type { Faq } from "../domain/Faq.js";
 
 import { faqToModel, modelToFaq } from "./converters.js";
 
 export class RepositoriFaq {
-  static readonly instance = new RepositoriFaq();
-  private constructor() {}
+  constructor(
+    private readonly modelFaq: ModelStatic<Model<any, any>>,
+  ) {}
 
   async getDaftarFaq(idKategori: number | null, searchQuery: string | null): Promise<Faq[]> {
     const whereQuery: Record<string, any> = {};
@@ -21,7 +22,7 @@ export class RepositoriFaq {
       };
     }
 
-    const daftarModelFaq: any[] = await ModelFaq.findAll({
+    const daftarModelFaq: any[] = await this.modelFaq.findAll({
       where: whereQuery,
     });
 
@@ -30,17 +31,17 @@ export class RepositoriFaq {
   }
 
   async countAll(): Promise<number> {
-    return await ModelFaq.count();
+    return await this.modelFaq.count();
   }
 
   async insert(faq: Faq): Promise<void> {
     const { id, ...modelFaq } = faqToModel(faq);
-    await ModelFaq.create(modelFaq);
+    await this.modelFaq.create(modelFaq);
   }
 
   async update(faq: Faq): Promise<void> {
     const { id, ...modelFaq } = faqToModel(faq);
-    await ModelFaq.update(modelFaq, {
+    await this.modelFaq.update(modelFaq, {
       where: {
         id,
       },
@@ -48,7 +49,7 @@ export class RepositoriFaq {
   }
 
   async delete(idFaq: number): Promise<void> {
-    await ModelFaq.destroy({
+    await this.modelFaq.destroy({
       where: {
         id: idFaq,
       },

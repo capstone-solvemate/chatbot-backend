@@ -6,6 +6,7 @@ import { ConfigReader } from "~/core/config/business/ConfigReader";
 import { createSequelize } from "~/core/db/sequelize";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
+import { createModelFaq } from "~/models/ModelFaq";
 import { createModelKategori } from "~/models/ModelKategori";
 import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelPengguna } from "~/models/ModelPengguna";
@@ -18,6 +19,8 @@ import { createModelTiket } from "~/models/ModelTiket";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
+import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
+import { RepositoriFaq } from "~/modules/faq/data/RepositoriFaq";
 import { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient";
 import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
 import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSession";
@@ -262,6 +265,32 @@ export class DI {
       );
     }
     return this.kontrolKategori;
+  }
+
+  private static modelFaq: ModelStatic<Model<any, any>> | null = null;
+  static provideModelFaq(): ModelStatic<Model<any, any>> {
+    if (!this.modelFaq) {
+      this.modelFaq = createModelFaq(this.provideSequelize());
+    }
+    return this.modelFaq;
+  }
+
+  private static repositoriFaq: RepositoriFaq | null = null;
+  static provideRepositoriFaq(): RepositoriFaq {
+    if (!this.repositoriFaq) {
+      this.repositoriFaq = new RepositoriFaq(
+        this.provideModelFaq(),
+      );
+    }
+    return this.repositoriFaq;
+  }
+
+  private static kontrolFaq: KontrolFaq | null = null;
+  static provideKontrolFaq(): KontrolFaq {
+    if (!this.kontrolFaq) {
+      this.kontrolFaq = new KontrolFaq(this.provideRepositoriFaq());
+    }
+    return this.kontrolFaq;
   }
 
   static registerWsHandlers(): void {
