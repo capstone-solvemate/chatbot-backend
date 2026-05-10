@@ -6,6 +6,7 @@ import { ConfigReader } from "~/core/config/business/ConfigReader";
 import { createSequelize } from "~/core/db/sequelize";
 import { WsSessionRegistry } from "~/core/ws/WsSessionRegistry";
 import { createModelChat } from "~/models/ModelChat";
+import { createModelKategori } from "~/models/ModelKategori";
 import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelPengguna } from "~/models/ModelPengguna";
 import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
@@ -23,6 +24,8 @@ import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSessi
 import { RepositoriResetPassword } from "~/modules/otentikasi/data/RepositoriResetPassword";
 import { KontrolPengguna } from "~/modules/pengguna/business/KontrolPengguna";
 import { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna";
+import { KontrolKategori } from "~/modules/settings/kategori/business/KontrolKategori";
+import { RepositoriKategori } from "~/modules/settings/kategori/data/RepositoriKategori";
 import { KontrolTiket } from "~/modules/tiket/business/KontrolTiket";
 import { RepositoriTiket } from "~/modules/tiket/data/RepositoriTiket";
 
@@ -231,6 +234,34 @@ export class DI {
       );
     }
     return this.kontrolTiket;
+  }
+
+  private static modelKategori: ModelStatic<Model<any, any>> | null = null;
+  static provideModelKategori(): ModelStatic<Model<any, any>> {
+    if (!this.modelKategori) {
+      this.modelKategori = createModelKategori(this.provideSequelize());
+    }
+    return this.modelKategori;
+  }
+
+  private static repositoriKategori: RepositoriKategori | null = null;
+  static provideRepositoriKategori(): RepositoriKategori {
+    if (!this.repositoriKategori) {
+      this.repositoriKategori = new RepositoriKategori(
+        this.provideModelKategori(),
+      );
+    }
+    return this.repositoriKategori;
+  }
+
+  private static kontrolKategori: KontrolKategori | null = null;
+  static provideKontrolKategori(): KontrolKategori {
+    if (!this.kontrolKategori) {
+      this.kontrolKategori = new KontrolKategori(
+        this.provideRepositoriKategori(),
+      );
+    }
+    return this.kontrolKategori;
   }
 
   static registerWsHandlers(): void {
