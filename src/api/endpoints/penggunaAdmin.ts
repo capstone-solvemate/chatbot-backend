@@ -12,3 +12,6 @@ routerPenggunaAdmin.get("/", auth([PeranPengguna.Admin]), (req, res, next) => ko
 routerPenggunaAdmin.put("/:id", auth([PeranPengguna.Admin]), (req, res, next) => {
   kontrolPengguna.editPengguna(req, res).catch(next);
 });
+routerPenggunaAdmin.get("/:id", auth([PeranPengguna.Admin]), (req, res, next) => {
+  kontrolPengguna.getPenggunaById(req, res).catch(next);
+});

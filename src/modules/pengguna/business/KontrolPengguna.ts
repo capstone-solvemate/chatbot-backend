@@ -59,4 +59,26 @@ export class KontrolPengguna {
     await this.repositoriPengguna.editPengguna(pengguna);
     res.sendStatus(204);
   }
+
+  async getPenggunaById(req: Request, res: Response): Promise<void> {
+    const id = Number.parseInt(req.params.id);
+    if (Number.isNaN(id)) {
+      throw new ValidationError([{
+        field: "id",
+        error: "invalid",
+        message: "id pengguna tidak valid.",
+      }]);
+    }
+
+    const pengguna = await this.repositoriPengguna.getPenggunaById(id, false, true);
+    if (!pengguna) {
+      throw new ValidationError([{
+        field: "id",
+        error: "not_found",
+        message: "pengguna tidak ditemukan.",
+      }]);
+    }
+
+    res.status(200).json(penggunaToDto(pengguna));
+  }
 }

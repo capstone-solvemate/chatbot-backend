@@ -45,13 +45,21 @@ export class RepositoriPengguna {
     return pengguna;
   }
 
-  async getPenggunaById(id: number, harusAktif: boolean = false): Promise<Pengguna | null> {
+  async getPenggunaById(id: number, harusAktif: boolean = false, denganRole: boolean = false): Promise<Pengguna | null> {
     const where: Record<string, any> = { id };
     if (harusAktif) {
       where.isActive = true;
     }
 
-    const modelPengguna = await this.modelPengguna.findOne({ where });
+    const modelPengguna = await this.modelPengguna.findOne({
+      where,
+      include: denganRole
+        ? {
+            model: this.modelPeranPengguna,
+            as: "ModelPeranPengguna",
+          }
+        : undefined,
+    });
     if (!modelPengguna) {
       return null;
     }
