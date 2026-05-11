@@ -111,10 +111,10 @@ export class KontrolTiket {
   }
 
   async getTiketById(req: Request, res: Response): Promise<void> {
-    const id = BigInt(req.params.id);
+    const idChat = BigInt(req.params.idChat);
     const sesi = req.sesiPengguna!;
 
-    const result = await this.repositoriTiket.getById(id);
+    const result = await this.repositoriTiket.getByIdChat(idChat);
     if (!result) {
       res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
       return;
@@ -125,7 +125,7 @@ export class KontrolTiket {
       throw new ForbiddenError();
     }
 
-    const pesans = await this.repositoriTiket.getPesanByTiket(id);
+    const pesans = await this.repositoriTiket.getPesanByTiket(idChat);
     const data: TiketDetailResponseDto = {
       ...tiketToDto(result),
       pesanTiket: pesans.map(pesanTiketToDto),
@@ -135,11 +135,11 @@ export class KontrolTiket {
   }
 
   async getTiketByIdAdmin(req: Request, res: Response): Promise<void> {
-    const id = BigInt(req.params.id);
+    const idChat = BigInt(req.params.idChat);
 
     const [result, pesans] = await Promise.all([
-      this.repositoriTiket.getByIdLengkap(id),
-      this.repositoriTiket.getPesanByTiket(id),
+      this.repositoriTiket.getByIdChatLengkap(idChat),
+      this.repositoriTiket.getPesanByTiket(idChat),
     ]);
 
     if (!result) {
@@ -166,12 +166,12 @@ export class KontrolTiket {
   }
 
   async updateStatusTiket(req: Request, res: Response): Promise<void> {
-    const id = BigInt(req.params.id);
+    const idChat = BigInt(req.params.idChat);
     const sesi = req.sesiPengguna!;
     const dto = validasiUpdateStatusTiket(req);
     const isAdmin = sesi.peranPengguna === PeranPengguna.Admin;
 
-    const result = await this.repositoriTiket.getById(id);
+    const result = await this.repositoriTiket.getByIdChat(idChat);
     if (!result) {
       res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
       return;
@@ -186,16 +186,16 @@ export class KontrolTiket {
       }
     }
 
-    await this.repositoriTiket.updateStatus(id, dto.status);
+    await this.repositoriTiket.updateStatus(idChat, dto.status);
     res.json({ success: true });
   }
 
   async buatPesanTiket(req: Request, res: Response): Promise<void> {
-    const idTiket = BigInt(req.params.id);
+    const idChat = BigInt(req.params.idChat);
     const sesi = req.sesiPengguna!;
     const dto = validasiBuatPesanTiket(req);
 
-    const result = await this.repositoriTiket.getById(idTiket);
+    const result = await this.repositoriTiket.getByIdChat(idChat);
     if (!result) {
       res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
       return;
@@ -206,8 +206,9 @@ export class KontrolTiket {
       throw new ForbiddenError();
     }
 
+    // id pada domain PesanTiket adalah id auto-increment tiket, bukan id_chat
     const pesan = await this.repositoriTiket.buatPesanTiket(
-      new PesanTiket(0n, idTiket, sesi.idPengguna!, dto.pesan, new Date()),
+      new PesanTiket(0n, result.tiket.id, sesi.idPengguna!, dto.pesan, new Date()),
     );
 
     res.status(201).json({ success: true, data: pesanTiketToDto(pesan) });

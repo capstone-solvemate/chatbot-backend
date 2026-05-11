@@ -18,18 +18,18 @@ routerTiket.get("/", auth(semuaPeran), (req, res, next) => {
   kontrol.getDaftarTiket(req, res).catch(next);
 });
 
-routerTiket.get("/:id", auth(semuaPeran), (req, res, next) => {
+routerTiket.get("/:idChat", auth(semuaPeran), (req, res, next) => {
   kontrol.getTiketById(req, res).catch(next);
 });
 
-routerTiket.patch("/:id/status", auth(semuaPeran), (req, res, next) => {
+routerTiket.patch("/:idChat/status", auth(semuaPeran), (req, res, next) => {
   kontrol.updateStatusTiket(req, res).catch(next);
 });
 
-routerTiket.post("/:id/pesan", auth(semuaPeran), (req, res, next) => {
+routerTiket.post("/:idChat/pesan", auth(semuaPeran), (req, res, next) => {
   kontrol.buatPesanTiket(req, res).catch(next);
 });
 
-routerTiket.get("/:id/admin", auth([PeranPengguna.Admin]), (req, res, next) => {
+routerTiket.get("/:idChat/admin", auth([PeranPengguna.Admin]), (req, res, next) => {
   kontrol.getTiketByIdAdmin(req, res).catch(next);
 });

@@ -77,8 +77,9 @@ export class RepositoriTiket {
     }
   }
 
-  async getById(id: bigint): Promise<TiketDenganPembuat | null> {
-    const model = await this.modelTiket.findByPk(id.toString(), {
+  async getByIdChat(idChat: bigint): Promise<TiketDenganPembuat | null> {
+    const model = await this.modelTiket.findOne({
+      where: { id_chat: idChat.toString() },
       include: {
         model: this.modelPengguna,
         as: "pembuat",
@@ -88,8 +89,9 @@ export class RepositoriTiket {
     return model ? modelToTiketDenganPembuat(model) : null;
   }
 
-  async getByIdLengkap(id: bigint): Promise<TiketDenganPembuatLengkap | null> {
-    const model = await this.modelTiket.findByPk(id.toString(), {
+  async getByIdChatLengkap(idChat: bigint): Promise<TiketDenganPembuatLengkap | null> {
+    const model = await this.modelTiket.findOne({
+      where: { id_chat: idChat.toString() },
       include: {
         model: this.modelPengguna,
         as: "pembuat",
@@ -140,11 +142,29 @@ export class RepositoriTiket {
     return models.map(modelToTiketDenganPembuat);
   }
 
-  async updateStatus(id: bigint, status: StatusTiket): Promise<void> {
+  async updateStatus(idChat: bigint, status: StatusTiket): Promise<void> {
     await this.modelTiket.update(
       { status, diperbarui_pada: new Date() },
-      { where: { id: id.toString() } },
+      { where: { id_chat: idChat.toString() } },
     );
+  }
+
+  async getPesanByTiket(idChat: bigint): Promise<PesanTiket[]> {
+    // Resolve id tiket dari id_chat terlebih dahulu
+    const modelTiket = await this.modelTiket.findOne({
+      where: { id_chat: idChat.toString() },
+      attributes: ["id"],
+    });
+    if (!modelTiket) {
+      return [];
+    }
+    const idTiket = modelTiket.getDataValue("id").toString();
+
+    const models = await this.modelPesanTiket.findAll({
+      where: { id_tiket: idTiket },
+      order: [["dibuat_pada", "ASC"]],
+    });
+    return models.map(modelToPesanTiket);
   }
 
   async buatPesanTiket(data: Omit<PesanTiket, "id">): Promise<PesanTiket> {
@@ -155,13 +175,5 @@ export class RepositoriTiket {
       dibuat_pada: data.dibuatPada,
     });
     return modelToPesanTiket(model);
-  }
-
-  async getPesanByTiket(idTiket: bigint): Promise<PesanTiket[]> {
-    const models = await this.modelPesanTiket.findAll({
-      where: { id_tiket: idTiket.toString() },
-      order: [["dibuat_pada", "ASC"]],
-    });
-    return models.map(modelToPesanTiket);
   }
 }
