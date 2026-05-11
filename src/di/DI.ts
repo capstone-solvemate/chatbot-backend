@@ -30,6 +30,7 @@ import { KontrolKnowledgeBase } from "~/modules/knowledge_base/business/KontrolK
 import { RepositoriKnowledgeBase } from "~/modules/knowledge_base/data/RepositoriKnowledgeBase";
 import { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient";
 import { KontrolNotifikasi } from "~/modules/notifikasi/web/business/KontrolNotifikasi";
+import { NotifikasiWsManager } from "~/modules/notifikasi/web/business/NotifikasiWsManager";
 import { RepositoriNotifikasi } from "~/modules/notifikasi/web/data/RepositoriNotifikasi";
 import { NotifikasiSubscriber } from "~/modules/notifikasi/web/event/NotifikasiSubscriber";
 import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
@@ -416,6 +417,14 @@ export class DI {
     return this.tiketEventBus;
   }
 
+  private static notifikasiWsManager: NotifikasiWsManager | null = null;
+  static provideNotifikasiWsManager(): NotifikasiWsManager {
+    if (!this.notifikasiWsManager) {
+      this.notifikasiWsManager = new NotifikasiWsManager();
+    }
+    return this.notifikasiWsManager;
+  }
+
   private static kontrolNotifikasi: KontrolNotifikasi | null = null;
   static provideKontrolNotifikasi(): KontrolNotifikasi {
     if (!this.kontrolNotifikasi) {
@@ -423,6 +432,7 @@ export class DI {
         this.provideRepositoriNotifikasi(),
         this.provideRepositoriPengguna(),
         this.provideEmailWorkerClient(),
+        this.provideNotifikasiWsManager(),
       );
     }
     return this.kontrolNotifikasi;

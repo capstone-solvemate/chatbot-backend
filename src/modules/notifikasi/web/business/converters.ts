@@ -5,7 +5,7 @@ import { JenisNotifikasi } from "../data/JenisNotifikasi.js";
 
 export function notifikasiToDto(notifikasi: Notifikasi): Record<string, any> {
   return {
-    id: notifikasi.id,
+    id: notifikasi.id.toString(),
     idPengguna: notifikasi.idPengguna,
     type: jenisNotifikasiToInt(JenisNotifikasi.Umum),
     judul: notifikasi.judul,

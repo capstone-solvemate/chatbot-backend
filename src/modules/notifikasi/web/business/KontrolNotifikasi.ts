@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type WebSocket from "ws";
 
 import type { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient.js";
 import type { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna.js";
@@ -10,6 +11,8 @@ import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 
 import type { RepositoriNotifikasi } from "../data/RepositoriNotifikasi.js";
 import type { GetNotifikasiResponseDto } from "./dto/GetNotifikasiResponseDto.js";
+import type { KoneksiNotifikasi } from "./KoneksiNotifikasi.js";
+import type { NotifikasiWsManager } from "./NotifikasiWsManager.js";
 
 import { NotifikasiTiket } from "../domain/NotifikasiTiket.js";
 import { notifikasiToDto } from "./converters.js";
@@ -19,6 +22,7 @@ export class KontrolNotifikasi {
     private readonly repositoriNotifikasi: RepositoriNotifikasi,
     private readonly repositoriPengguna: RepositoriPengguna,
     private readonly emailWorkerClient: EmailWorkerClient,
+    private readonly notifikasiWsManager: NotifikasiWsManager,
   ) {}
 
   // ─── HTTP Handlers ────────────────────────────────────────────────────────
@@ -56,6 +60,17 @@ export class KontrolNotifikasi {
     res.sendStatus(204);
   }
 
+  // ─── WS Handler ───────────────────────────────────────────────────────────
+
+  handleWsConnect(ws: WebSocket, idPengguna: number, idSession: string): void {
+    const koneksi: KoneksiNotifikasi = { ws, idPengguna, idSession };
+    this.notifikasiWsManager.tambah(koneksi);
+
+    ws.on("close", () => {
+      this.notifikasiWsManager.hapus(koneksi);
+    });
+  }
+
   // ─── Event Handlers ───────────────────────────────────────────────────────
 
   async tanganiTiketDibuat(payload: EventTiketDibuatPayload): Promise<void> {
@@ -69,11 +84,9 @@ export class KontrolNotifikasi {
     const deskripsi = `${namaPembuat} membuat tiket baru: "${payload.judul}".`;
 
     await Promise.all(
-      daftarAdmin.map(admin =>
-        this.repositoriNotifikasi.buatNotifikasi(
-          new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
-        ),
-      ),
+      daftarAdmin.map(admin => this.simpanDanKirim(
+        new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
+      )),
     );
     this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
   }
@@ -88,18 +101,16 @@ export class KontrolNotifikasi {
     if (payload.peranPengirim === PeranPengguna.Karyawan) {
       const daftarAdmin = await this.repositoriPengguna.getPenggunaAktifByPeran(PeranPengguna.Admin);
       await Promise.all(
-        daftarAdmin.map(admin =>
-          this.repositoriNotifikasi.buatNotifikasi(
-            new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
-          ),
-        ),
+        daftarAdmin.map(admin => this.simpanDanKirim(
+          new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
+        )),
       );
       this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
     }
     else {
       const karyawan = await this.repositoriPengguna.getPenggunaById(payload.idPemilikTiket);
       if (karyawan) {
-        await this.repositoriNotifikasi.buatNotifikasi(
+        await this.simpanDanKirim(
           new NotifikasiTiket(0n, karyawan.id, judul, deskripsi, new Date(), null, payload.idTiket),
         );
         this.kirimEmailKeSemuaPenerima([karyawan.email], judul, deskripsi);
@@ -117,18 +128,16 @@ export class KontrolNotifikasi {
     if (payload.peranPengirim === PeranPengguna.Karyawan) {
       const daftarAdmin = await this.repositoriPengguna.getPenggunaAktifByPeran(PeranPengguna.Admin);
       await Promise.all(
-        daftarAdmin.map(admin =>
-          this.repositoriNotifikasi.buatNotifikasi(
-            new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
-          ),
-        ),
+        daftarAdmin.map(admin => this.simpanDanKirim(
+          new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
+        )),
       );
       this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
     }
     else {
       const karyawan = await this.repositoriPengguna.getPenggunaById(payload.idPemilikTiket);
       if (karyawan) {
-        await this.repositoriNotifikasi.buatNotifikasi(
+        await this.simpanDanKirim(
           new NotifikasiTiket(0n, karyawan.id, judul, deskripsi, new Date(), null, payload.idTiket),
         );
         this.kirimEmailKeSemuaPenerima([karyawan.email], judul, deskripsi);
@@ -137,6 +146,11 @@ export class KontrolNotifikasi {
   }
 
   // ─── Private Helpers ──────────────────────────────────────────────────────
+
+  private async simpanDanKirim(notifikasi: NotifikasiTiket): Promise<void> {
+    await this.repositoriNotifikasi.buatNotifikasi(notifikasi);
+    this.notifikasiWsManager.kirim(notifikasi.idPengguna, notifikasiToDto(notifikasi));
+  }
 
   private kirimEmailKeSemuaPenerima(
     emailPenerima: string[],

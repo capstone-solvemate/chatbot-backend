@@ -14,6 +14,7 @@ import type MessageResponse from "./interfaces/message-response.js";
 import { handleChatWsUpgrade } from "./api/chat.js";
 import { handleDashboardWsUpgrade } from "./api/dashboard.js";
 import api from "./api/index.js";
+import { handleNotifikasiWsUpgrade } from "./api/notifikasi.js";
 import * as middlewares from "./middlewares.js";
 
 const app = express();
@@ -42,6 +43,7 @@ app.use(middlewares.errorHandler);
 // Pola URL WebSocket yang didukung
 const WS_CHAT_PATTERN = /^\/api\/chat\/(\d+)\/ws$/;
 const WS_DASHBOARD_PATTERN = /^\/api\/dashboard\/ws(?:\?.*)?$/;
+const WS_NOTIFIKASI_PATTERN = /^\/api\/notifikasi\/ws$/;
 
 /**
  * Dipanggil dari index.ts saat HTTP upgrade event.
@@ -72,6 +74,17 @@ export function handleWsUpgrade(
     wss.handleUpgrade(req, socket, head, (ws) => {
       handleDashboardWsUpgrade(ws, req).catch((err) => {
         console.error(new Date().toISOString(), "[WS Dashboard] Upgrade error:", err);
+        ws.close(4500, "Internal server error");
+      });
+    });
+    return;
+  }
+
+  const matchNotifikasi = WS_NOTIFIKASI_PATTERN.exec(url);
+  if (matchNotifikasi) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      handleNotifikasiWsUpgrade(ws, req).catch((err) => {
+        console.error(new Date().toISOString(), "[WS] Notifikasi upgrade error:", err);
         ws.close(4500, "Internal server error");
       });
     });
