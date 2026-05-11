@@ -10,7 +10,7 @@ import { createModelFaq } from "~/models/ModelFaq";
 import { createModelFaqSurvei } from "~/models/ModelFaqSurvei";
 import { createModelFaqViewLog } from "~/models/ModelFaqViewLog";
 import { createModelKategori } from "~/models/ModelKategori";
-import { initModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
+import { createModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelPengguna } from "~/models/ModelPengguna";
 import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
 import { createModelPesanChat } from "~/models/ModelPesanChat";
@@ -23,6 +23,9 @@ import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
 import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
 import { RepositoriFaq } from "~/modules/faq/data/RepositoriFaq";
+import { KnowledgeBaseWorkerClient } from "~/modules/knowledge_base/business/KnowledgeBaseWorkerClient";
+import { KontrolKnowledgeBase } from "~/modules/knowledge_base/business/KontrolKnowledgeBase";
+import { RepositoriKnowledgeBase } from "~/modules/knowledge_base/data/RepositoriKnowledgeBase";
 import { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient";
 import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
 import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSession";
@@ -47,7 +50,6 @@ export class DI {
   static provideSequelize(): Sequelize {
     if (!this.sequelize) {
       this.sequelize = createSequelize(this.provideConfig());
-      initModelKnowledgeBase(this.sequelize);
     }
     return this.sequelize;
   }
@@ -315,6 +317,55 @@ export class DI {
       this.kontrolFaq = new KontrolFaq(this.provideRepositoriFaq());
     }
     return this.kontrolFaq;
+  }
+
+  private static modelKnowledgeBase: ModelStatic<Model<any, any>> | null = null;
+  static provideModelKnowledgeBase(): ModelStatic<Model<any, any>> {
+    if (!this.modelKnowledgeBase) {
+      this.modelKnowledgeBase = createModelKnowledgeBase(
+        this.provideSequelize(),
+      );
+    }
+    return this.modelKnowledgeBase;
+  }
+
+  private static repositoriKnowledgeBase: RepositoriKnowledgeBase | null = null;
+  static provideRepositoriKnowledgeBase(): RepositoriKnowledgeBase {
+    if (!this.repositoriKnowledgeBase) {
+      this.repositoriKnowledgeBase = new RepositoriKnowledgeBase(
+        this.provideModelKnowledgeBase(),
+      );
+    }
+    return this.repositoriKnowledgeBase;
+  }
+
+  private static kontrolKnowledgeBase: KontrolKnowledgeBase | null = null;
+  static provideKontrolKnowledgeBase(): KontrolKnowledgeBase {
+    if (!this.kontrolKnowledgeBase) {
+      this.kontrolKnowledgeBase = new KontrolKnowledgeBase(
+        this.provideRepositoriKnowledgeBase(),
+      );
+    }
+    return this.kontrolKnowledgeBase;
+  }
+
+  private static knowledgeBaseWorkerClient: KnowledgeBaseWorkerClient | null = null;
+  static provideKnowledgeBaseWorkerClient(): KnowledgeBaseWorkerClient {
+    if (!this.knowledgeBaseWorkerClient) {
+      this.knowledgeBaseWorkerClient = new KnowledgeBaseWorkerClient(
+        this.provideConfig().ragConfig,
+        (pesan) => {
+          this.provideKontrolKnowledgeBase().tanganiPesanWorker(pesan).catch((err) => {
+            console.error(
+              new Date().toISOString(),
+              "[DI] Gagal menangani pesan worker knowledge base:",
+              err,
+            );
+          });
+        },
+      );
+    }
+    return this.knowledgeBaseWorkerClient;
   }
 
   static registerWsHandlers(): void {

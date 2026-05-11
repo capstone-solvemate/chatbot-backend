@@ -2,10 +2,10 @@ import express from "express";
 import multer from "multer";
 import path from "node:path";
 
-import { KontrolKnowledgeBase } from "../modules/knowledge_base/business/KontrolKnowledgeBase.js";
+import { DI } from "~/di/DI.js";
 
 const router = express.Router();
-const kontrol = KontrolKnowledgeBase.instance;
+const kontrol = DI.provideKontrolKnowledgeBase();
 
 // Konfigurasi Multer untuk penyimpanan file
 const storage = multer.diskStorage({

@@ -1,9 +1,10 @@
+import type { Model, ModelStatic } from "sequelize";
+
 import { Op } from "sequelize";
 
 import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
 import type { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 
-import { ModelKnowledgeBase } from "../../../models/ModelKnowledgeBase.js";
 import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
 export type FilterDokumen = {
@@ -12,11 +13,12 @@ export type FilterDokumen = {
 };
 
 export class RepositoriKnowledgeBase {
-  private constructor() {}
-  static readonly instance = new RepositoriKnowledgeBase();
+  constructor(
+    private modelKnowledgeBase: ModelStatic<Model<any, any>>,
+  ) {}
 
   async buatDokumen(kb: KnowledgeBase): Promise<KnowledgeBase> {
-    const doc = await ModelKnowledgeBase.create(knowledgeBaseToRow(kb));
+    const doc = await this.modelKnowledgeBase.create(knowledgeBaseToRow(kb));
     return modelToKnowledgeBase(doc.toJSON());
   }
 
@@ -31,7 +33,7 @@ export class RepositoriKnowledgeBase {
       where.judul = { [Op.like]: `%${filter.judul.trim()}%` };
     }
 
-    const docs = await ModelKnowledgeBase.findAll({
+    const docs = await this.modelKnowledgeBase.findAll({
       where,
       order: [["created_at", "DESC"]],
     });
@@ -39,21 +41,21 @@ export class RepositoriKnowledgeBase {
   }
 
   async getDokumenById(id: bigint): Promise<KnowledgeBase | null> {
-    const doc = await ModelKnowledgeBase.findByPk(id.toString());
+    const doc = await this.modelKnowledgeBase.findByPk(id.toString());
     if (!doc)
       return null;
     return modelToKnowledgeBase(doc.toJSON());
   }
 
   async hapusDokumen(id: bigint): Promise<boolean> {
-    const deleted = await ModelKnowledgeBase.destroy({
+    const deleted = await this.modelKnowledgeBase.destroy({
       where: { id: id.toString() },
     });
     return deleted > 0;
   }
 
   async updateStatus(id: bigint, status: StatusKnowledgeBase): Promise<boolean> {
-    const [updated] = await ModelKnowledgeBase.update({ status }, {
+    const [updated] = await this.modelKnowledgeBase.update({ status }, {
       where: { id: id.toString() },
     });
     return updated > 0;

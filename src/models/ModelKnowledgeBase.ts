@@ -1,25 +1,9 @@
-import type { CreationOptional, InferAttributes, InferCreationAttributes, Sequelize } from "sequelize";
+import type { Model, ModelStatic, Sequelize } from "sequelize";
 
-import { DataTypes, Model } from "sequelize";
+import { DataTypes } from "sequelize";
 
-export class ModelKnowledgeBase extends Model<
-  InferAttributes<ModelKnowledgeBase, { omit: "created_at" | "updated_at" }>,
-  InferCreationAttributes<ModelKnowledgeBase, { omit: "created_at" | "updated_at" }>
-> {
-  declare id: CreationOptional<bigint>;
-  declare doc_id: string;
-  declare judul: string;
-  declare id_kategori: number;
-  declare nama_berkas: string;
-  declare ukuran_berkas: number;
-  declare path: string;
-  declare status: number;
-  declare created_at: CreationOptional<Date>;
-  declare updated_at: CreationOptional<Date>;
-}
-
-export function initModelKnowledgeBase(sequelize: Sequelize): void {
-  ModelKnowledgeBase.init({
+export function createModelKnowledgeBase(sequelize: Sequelize): ModelStatic<Model<any, any>> {
+  return sequelize.define("ModelKnowledgeBase", {
     id: {
       type: DataTypes.BIGINT,
       primaryKey: true,
@@ -57,7 +41,6 @@ export function initModelKnowledgeBase(sequelize: Sequelize): void {
       allowNull: false,
     },
   }, {
-    sequelize,
     tableName: "knowledge_base",
     timestamps: true,
     underscored: true,
