@@ -84,7 +84,7 @@ export class KontrolTiket {
     );
 
     this.tiketEventBus.emit("tiket_dibuat", {
-      idTiket: tiket.id,
+      idTiket: tiket.idChat,
       idPengguna: sesi.idPengguna!,
       judul: tiket.judul,
     });
@@ -193,7 +193,7 @@ export class KontrolTiket {
     await this.repositoriTiket.updateStatus(idChat, dto.status);
 
     this.tiketEventBus.emit("status_diubah", {
-      idTiket: result.tiket.id,
+      idTiket: result.tiket.idChat,
       judulTiket: result.tiket.judul,
       statusBaru: statusTiketToString(dto.status),
       idPengirim: sesi.idPengguna!,
@@ -225,7 +225,7 @@ export class KontrolTiket {
     );
 
     this.tiketEventBus.emit("pesan_baru", {
-      idTiket: result.tiket.id,
+      idTiket: result.tiket.idChat,
       judulTiket: result.tiket.judul,
       idPengirim: sesi.idPengguna!,
       peranPengirim: sesi.peranPengguna!,

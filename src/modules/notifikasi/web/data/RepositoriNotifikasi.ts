@@ -48,18 +48,18 @@ export class RepositoriNotifikasi {
       ? jenisNotifikasiToInt(JenisNotifikasi.Tiket)
       : jenisNotifikasiToInt(JenisNotifikasi.Umum);
 
-    const idTiket = notifikasi instanceof NotifikasiTiket
-      ? notifikasi.idTiket
+    const extraData = notifikasi instanceof NotifikasiTiket
+      ? JSON.stringify({ idTiket: notifikasi.idTiket.toString() })
       : null;
 
     await this.modelNotifikasi.create({
       id_pengguna: notifikasi.idPengguna,
+      type,
       judul: notifikasi.judul,
       deskripsi: notifikasi.deskripsi,
+      extra_data: extraData,
       dibuat_pada: notifikasi.dibuatPada,
       dibaca_pada: null,
-      type,
-      id_tiket: idTiket,
     });
   }
 
