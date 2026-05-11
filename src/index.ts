@@ -40,3 +40,4 @@ server.on("error", (err) => {
 });
 
 DI.registerWsHandlers();
+DI.provideNotifikasiSubscriber().registerSubscribers();

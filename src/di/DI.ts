@@ -11,6 +11,7 @@ import { createModelFaqSurvei } from "~/models/ModelFaqSurvei";
 import { createModelFaqViewLog } from "~/models/ModelFaqViewLog";
 import { createModelKategori } from "~/models/ModelKategori";
 import { createModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
+import { createModelNotifikasi } from "~/models/ModelNotifikasi";
 import { createModelPengguna } from "~/models/ModelPengguna";
 import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
 import { createModelPesanChat } from "~/models/ModelPesanChat";
@@ -28,6 +29,9 @@ import { KnowledgeBaseWorkerClient } from "~/modules/knowledge_base/business/Kno
 import { KontrolKnowledgeBase } from "~/modules/knowledge_base/business/KontrolKnowledgeBase";
 import { RepositoriKnowledgeBase } from "~/modules/knowledge_base/data/RepositoriKnowledgeBase";
 import { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient";
+import { KontrolNotifikasi } from "~/modules/notifikasi/web/business/KontrolNotifikasi";
+import { RepositoriNotifikasi } from "~/modules/notifikasi/web/data/RepositoriNotifikasi";
+import { NotifikasiSubscriber } from "~/modules/notifikasi/web/event/NotifikasiSubscriber";
 import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
 import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSession";
 import { RepositoriResetPassword } from "~/modules/otentikasi/data/RepositoriResetPassword";
@@ -37,6 +41,7 @@ import { KontrolKategori } from "~/modules/settings/kategori/business/KontrolKat
 import { RepositoriKategori } from "~/modules/settings/kategori/data/RepositoriKategori";
 import { KontrolTiket } from "~/modules/tiket/business/KontrolTiket";
 import { RepositoriTiket } from "~/modules/tiket/data/RepositoriTiket";
+import { TiketEventBus } from "~/modules/tiket/event/TiketEventBus";
 
 export class DI {
   private static config: Config | null = null;
@@ -241,6 +246,7 @@ export class DI {
     if (!this.kontrolTiket) {
       this.kontrolTiket = new KontrolTiket(
         this.provideRepositoriTiket(),
+        this.provideTiketEventBus(),
       );
     }
     return this.kontrolTiket;
@@ -382,6 +388,55 @@ export class DI {
       );
     }
     return this.kontrolChat;
+  }
+
+  private static modelNotifikasi: ModelStatic<Model<any, any>> | null = null;
+  static provideModelNotifikasi(): ModelStatic<Model<any, any>> {
+    if (!this.modelNotifikasi) {
+      this.modelNotifikasi = createModelNotifikasi(this.provideSequelize());
+    }
+    return this.modelNotifikasi;
+  }
+
+  private static repositoriNotifikasi: RepositoriNotifikasi | null = null;
+  static provideRepositoriNotifikasi(): RepositoriNotifikasi {
+    if (!this.repositoriNotifikasi) {
+      this.repositoriNotifikasi = new RepositoriNotifikasi(
+        this.provideModelNotifikasi(),
+      );
+    }
+    return this.repositoriNotifikasi;
+  }
+
+  private static tiketEventBus: TiketEventBus | null = null;
+  static provideTiketEventBus(): TiketEventBus {
+    if (!this.tiketEventBus) {
+      this.tiketEventBus = new TiketEventBus();
+    }
+    return this.tiketEventBus;
+  }
+
+  private static kontrolNotifikasi: KontrolNotifikasi | null = null;
+  static provideKontrolNotifikasi(): KontrolNotifikasi {
+    if (!this.kontrolNotifikasi) {
+      this.kontrolNotifikasi = new KontrolNotifikasi(
+        this.provideRepositoriNotifikasi(),
+        this.provideRepositoriPengguna(),
+        this.provideEmailWorkerClient(),
+      );
+    }
+    return this.kontrolNotifikasi;
+  }
+
+  private static notifikasiSubscriber: NotifikasiSubscriber | null = null;
+  static provideNotifikasiSubscriber(): NotifikasiSubscriber {
+    if (!this.notifikasiSubscriber) {
+      this.notifikasiSubscriber = new NotifikasiSubscriber(
+        this.provideTiketEventBus(),
+        this.provideKontrolNotifikasi(),
+      );
+    }
+    return this.notifikasiSubscriber;
   }
 
   static registerWsHandlers(): void {

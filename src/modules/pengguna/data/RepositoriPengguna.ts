@@ -6,8 +6,9 @@ import { ConflictError } from "~/core/types/ConflictError.js";
 import { DI } from "~/di/DI.js";
 
 import type { Pengguna } from "../domain/Pengguna.js";
+import type { PeranPengguna } from "../domain/PeranPengguna.js";
 
-import { intToPeranPengguna } from "../domain/PeranPengguna.js";
+import { peranPenggunaToInt } from "../domain/PeranPengguna.js";
 import { modelToPengguna, penggunaToRow, penggunaToRowPeran } from "./converters.js";
 
 export class RepositoriPengguna {
@@ -161,5 +162,28 @@ export class RepositoriPengguna {
       await tx.rollback();
       throw e;
     }
+  }
+
+  async getPenggunaAktifByPeran(peran: PeranPengguna): Promise<Pengguna[]> {
+    const peranInt = peranPenggunaToInt(peran);
+
+    const listModelPeran = await this.modelPeranPengguna.findAll({
+      where: { peran: peranInt },
+    });
+
+    if (listModelPeran.length === 0) {
+      return [];
+    }
+
+    const idPengguna = (listModelPeran as any[]).map(m => m.id_pengguna);
+
+    const listModelPengguna = await this.modelPengguna.findAll({
+      where: {
+        id: { [Op.in]: idPengguna },
+        isActive: true,
+      },
+    });
+
+    return listModelPengguna.map(m => modelToPengguna(m.toJSON()));
   }
 }

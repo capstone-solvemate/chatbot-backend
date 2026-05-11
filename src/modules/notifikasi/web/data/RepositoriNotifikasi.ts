@@ -1,33 +1,90 @@
-import { ModelNotifikasi } from "~/models/ModelNotifikasi.js";
+import type { Model, ModelStatic } from "sequelize";
+
+import { Op } from "sequelize";
 
 import type { Notifikasi } from "../domain/Notifikasi.js";
 
-import { modelToNotifikasi } from "./converters.js";
+import { NotifikasiTiket } from "../domain/NotifikasiTiket.js";
+import { jenisNotifikasiToInt, modelToNotifikasi } from "./converters.js";
+import { JenisNotifikasi } from "./JenisNotifikasi.js";
+
+const UKURAN_HALAMAN = 8;
 
 export class RepositoriNotifikasi {
-  static readonly instance = new RepositoriNotifikasi();
-  private constructor() {}
+  constructor(private readonly modelNotifikasi: ModelStatic<Model<any, any>>) {}
 
-  async getDaftarNotifikasi(idPengguna: number): Promise<Notifikasi[]> {
-    const daftarModelNotifikasi = await ModelNotifikasi.findAll({
-      where: {
-        id_pengguna: idPengguna,
-      },
-      order: [
-        ["dibuat_pada", "DESC"],
-      ],
+  async getDaftarNotifikasi(idPengguna: number, sebelumId?: bigint): Promise<{ notifikasi: Notifikasi[]; adaLebihBanyak: boolean }> {
+    const where: Record<string, any> = { id_pengguna: idPengguna };
+
+    if (sebelumId !== undefined) {
+      where.id = { [Op.lt]: sebelumId };
+    }
+
+    const rows = await this.modelNotifikasi.findAll({
+      where,
+      order: [["id", "DESC"]],
+      limit: UKURAN_HALAMAN + 1,
     });
-    const daftarNotifikasi = daftarModelNotifikasi.map(modelNotifikasi => modelToNotifikasi(modelNotifikasi));
-    return daftarNotifikasi;
+
+    const adaLebihBanyak = rows.length > UKURAN_HALAMAN;
+    const notifikasi = rows
+      .slice(0, UKURAN_HALAMAN)
+      .map(r => modelToNotifikasi(r.toJSON()));
+
+    return { notifikasi, adaLebihBanyak };
   }
 
   async getJumlahNotifikasiBelumDibaca(idPengguna: number): Promise<number> {
-    const jumlahBelumDibaca = await ModelNotifikasi.count({
+    return this.modelNotifikasi.count({
       where: {
         id_pengguna: idPengguna,
         dibaca_pada: null,
       },
     });
-    return jumlahBelumDibaca;
+  }
+
+  async buatNotifikasi(notifikasi: Notifikasi): Promise<void> {
+    const type = notifikasi instanceof NotifikasiTiket
+      ? jenisNotifikasiToInt(JenisNotifikasi.Tiket)
+      : jenisNotifikasiToInt(JenisNotifikasi.Umum);
+
+    const idTiket = notifikasi instanceof NotifikasiTiket
+      ? notifikasi.idTiket
+      : null;
+
+    await this.modelNotifikasi.create({
+      id_pengguna: notifikasi.idPengguna,
+      judul: notifikasi.judul,
+      deskripsi: notifikasi.deskripsi,
+      dibuat_pada: notifikasi.dibuatPada,
+      dibaca_pada: null,
+      type,
+      id_tiket: idTiket,
+    });
+  }
+
+  async tandaiDibaca(id: bigint, idPengguna: number): Promise<void> {
+    await this.modelNotifikasi.update(
+      { dibaca_pada: new Date() },
+      {
+        where: {
+          id,
+          id_pengguna: idPengguna,
+          dibaca_pada: null,
+        },
+      },
+    );
+  }
+
+  async tandaiSemuaDibaca(idPengguna: number): Promise<void> {
+    await this.modelNotifikasi.update(
+      { dibaca_pada: new Date() },
+      {
+        where: {
+          id_pengguna: idPengguna,
+          dibaca_pada: null,
+        },
+      },
+    );
   }
 }

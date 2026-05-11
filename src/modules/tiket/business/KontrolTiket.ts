@@ -2,9 +2,9 @@ import type { Request, Response } from "express";
 
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
-import { DashboardEventBus } from "~/modules/dashboard/business/DashboardEventBus.js";
 
 import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
+import type { TiketEventBus } from "../event/TiketEventBus.js";
 import type {
   PesanChatResponseDto,
   PesanTiketResponseDto,
@@ -51,6 +51,7 @@ function pesanTiketToDto(pesan: PesanTiket): PesanTiketResponseDto {
 export class KontrolTiket {
   constructor(
     private readonly repositoriTiket: RepositoriTiket,
+    private readonly tiketEventBus: TiketEventBus,
   ) {}
 
   private readonly repositoriChat = DI.provideRepositoriChat();
@@ -59,7 +60,6 @@ export class KontrolTiket {
     const dto = validasiBuatTiket(req);
     const sesi = req.sesiPengguna!;
 
-    // Validasi chat: harus ada dan milik pengguna yang sedang login
     const chat = await this.repositoriChat.getChatById(dto.idChat);
     if (!chat) {
       res.status(404).json({ success: false, message: "Chat tidak ditemukan." });
@@ -83,7 +83,11 @@ export class KontrolTiket {
       ),
     );
 
-    DashboardEventBus.tiketDibuat();
+    this.tiketEventBus.emit("tiket_dibuat", {
+      idTiket: tiket.id,
+      idPengguna: sesi.idPengguna!,
+      judul: tiket.judul,
+    });
 
     res.status(201).json({ success: true, data: tiketToDto({ tiket, namaPembuat: "" }) });
   }
@@ -187,6 +191,16 @@ export class KontrolTiket {
     }
 
     await this.repositoriTiket.updateStatus(idChat, dto.status);
+
+    this.tiketEventBus.emit("status_diubah", {
+      idTiket: result.tiket.id,
+      judulTiket: result.tiket.judul,
+      statusBaru: statusTiketToString(dto.status),
+      idPengirim: sesi.idPengguna!,
+      peranPengirim: sesi.peranPengguna!,
+      idPemilikTiket: result.tiket.idPembuat,
+    });
+
     res.json({ success: true });
   }
 
@@ -206,10 +220,17 @@ export class KontrolTiket {
       throw new ForbiddenError();
     }
 
-    // id pada domain PesanTiket adalah id auto-increment tiket, bukan id_chat
     const pesan = await this.repositoriTiket.buatPesanTiket(
       new PesanTiket(0n, result.tiket.id, sesi.idPengguna!, dto.pesan, new Date()),
     );
+
+    this.tiketEventBus.emit("pesan_baru", {
+      idTiket: result.tiket.id,
+      judulTiket: result.tiket.judul,
+      idPengirim: sesi.idPengguna!,
+      peranPengirim: sesi.peranPengguna!,
+      idPemilikTiket: result.tiket.idPembuat,
+    });
 
     res.status(201).json({ success: true, data: pesanTiketToDto(pesan) });
   }
