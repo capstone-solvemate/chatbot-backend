@@ -6,6 +6,7 @@ const NAMA_TABEL = "pesan_chat";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
+  NAMA_TABEL_PESAN_CHAT: NAMA_TABEL,
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable(NAMA_TABEL, {
       id: {

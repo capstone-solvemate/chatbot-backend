@@ -1,19 +1,46 @@
 import type { Request, Response } from "express";
 import type WebSocket from "ws";
 
-import { DI } from "~/di/DI.js";
-
+import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { KoneksiChat } from "../domain/KoneksiChat.js";
+import type { ChatWsManager } from "./ChatWsManager.js";
+import type { RagWorkerClient } from "./RagWorkerClient.js";
 
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
 
 export class KontrolChat {
-  private constructor() {}
-  static readonly instance = new KontrolChat();
+  constructor(
+    private readonly repositoriChat: RepositoriChat,
+    private readonly chatWsManager: ChatWsManager,
+    private readonly ragWorkerClient: RagWorkerClient,
+  ) {
+    // Fire and forget — reset chat yang sedang_diproses = true akibat restart
+    this.selesaikanChatYangTerputus();
+  }
 
-  private readonly repositoriChat = DI.provideRepositoriChat();
-  private readonly chatWsManager = DI.provideChatWsManager();
-  private readonly ragWorkerClient = DI.provideRagWorkerClient();
+  /**
+   * Dipanggil saat startup — reset semua chat yang tertinggal dalam kondisi
+   * sedang_diproses = true akibat server restart di tengah pemrosesan RAG.
+   */
+  private selesaikanChatYangTerputus(): void {
+    this.repositoriChat
+      .pulihkanChatTerputus()
+      .then((jumlah) => {
+        if (jumlah > 0) {
+          console.warn(
+            new Date().toISOString(),
+            `[KontrolChat] ${jumlah} chat dipulihkan dari kondisi terputus akibat restart.`,
+          );
+        }
+      })
+      .catch((err) => {
+        console.error(
+          new Date().toISOString(),
+          "[KontrolChat] Gagal memulihkan chat terputus saat startup:",
+          err,
+        );
+      });
+  }
 
   /**
    * POST /api/chat
@@ -31,7 +58,6 @@ export class KontrolChat {
 
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
-    // Trigger RAG async — history hanya berisi pesan pertama
     this.ragWorkerClient.tambahTugas(idChat, [
       { role: "user", content: dto.pesan },
     ]);
@@ -57,15 +83,23 @@ export class KontrolChat {
 
     const chat = await this.repositoriChat.getChatById(idChat);
     if (!chat || chat.idPembuat !== idPembuat) {
-      res.status(404).json({ error: "not_found", message: "Chat tidak ditemukan" });
+      res.status(404).json({ error: "not_found", message: "Chat tidak ditemukan." });
       return;
     }
 
-    // Ambil histori untuk dikirim ke RAG
+    if (chat.dialihkanKeTiket) {
+      res.status(409).json({ error: "dialihkan_ke_tiket", message: "Chat ini sudah dialihkan ke tiket dan tidak bisa dibalas." });
+      return;
+    }
+
+    if (chat.sedangDiproses) {
+      res.status(409).json({ error: "sedang_diproses", message: "Tunggu hingga jawaban sebelumnya selesai." });
+      return;
+    }
+
     const historiPesan = await this.repositoriChat.getHistoriPesan(idChat);
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
-    // Bangun history: pesan lama + pesan baru
     const history = [
       ...historiPesan.map(p => ({
         role: p.chatAsisten ? "assistant" as const : "user" as const,
@@ -74,7 +108,6 @@ export class KontrolChat {
       { role: "user" as const, content: dto.pesan },
     ];
 
-    // Trigger RAG async
     this.ragWorkerClient.tambahTugas(idChat, history);
 
     res.status(200).json({
@@ -99,6 +132,8 @@ export class KontrolChat {
       id: c.id.toString(),
       subjek: c.subjek,
       tanggalDibuat: c.tanggalDibuat,
+      sedangDiproses: c.sedangDiproses,
+      dialihkanKeTiket: c.dialihkanKeTiket,
     })));
   }
 
@@ -112,7 +147,7 @@ export class KontrolChat {
 
     const chat = await this.repositoriChat.getChatById(idChat);
     if (!chat || chat.idPembuat !== idPembuat) {
-      res.status(404).json({ error: "not_found", message: "Chat tidak ditemukan" });
+      res.status(404).json({ error: "not_found", message: "Chat tidak ditemukan." });
       return;
     }
 
@@ -122,11 +157,14 @@ export class KontrolChat {
       id: chat.id.toString(),
       subjek: chat.subjek,
       tanggalDibuat: chat.tanggalDibuat,
+      sedangDiproses: chat.sedangDiproses,
+      dialihkanKeTiket: chat.dialihkanKeTiket,
       pesan: pesan.map(p => ({
         id: p.id.toString(),
         pesan: p.pesan,
         chatAsisten: p.chatAsisten,
         tanggalDibuat: p.tanggalDibuat,
+        gagal: p.gagal,
       })),
     });
   }
@@ -142,14 +180,12 @@ export class KontrolChat {
     idPembuat: number,
     idSession: string,
   ): Promise<void> {
-    // Verifikasi kepemilikan chat
     const chat = await this.repositoriChat.getChatById(idChat);
     if (!chat || chat.idPembuat !== idPembuat) {
       ws.close(4004, "Chat tidak ditemukan");
       return;
     }
 
-    // Daftarkan koneksi
     const koneksi: KoneksiChat = { ws, idChat, idSession };
     this.chatWsManager.tambah(koneksi);
 

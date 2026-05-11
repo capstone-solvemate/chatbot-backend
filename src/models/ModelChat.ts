@@ -23,6 +23,16 @@ export function createModelChat(sequelize: Sequelize) {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    sedang_diproses: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    dialihkan_ke_tiket: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   }, {
     tableName: "chat",
     timestamps: false,

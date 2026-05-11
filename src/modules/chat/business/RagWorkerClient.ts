@@ -16,15 +16,28 @@ import type { ChatWsManager } from "./ChatWsManager.js";
 export class RagWorkerClient {
   private worker: Worker | null = null;
 
-  constructor(private readonly config: RagConfig, private readonly chatWsManager: ChatWsManager, private readonly repositoriChat: RepositoriChat,
+  constructor(
+    private readonly config: RagConfig,
+    private readonly chatWsManager: ChatWsManager,
+    private readonly repositoriChat: RepositoriChat,
   ) {}
 
   /**
    * Tambahkan tugas RAG ke antrian worker.
    * Worker akan di-start otomatis jika belum berjalan.
+   * Set sedang_diproses = true di DB sebelum kirim ke worker.
    * Non-blocking — main thread tidak menunggu RAG selesai.
    */
   tambahTugas(idChat: bigint, history: RiwayatRag[]): void {
+    // Set flag di DB — fire and forget, tidak block request
+    this.repositoriChat.mulaiProsesChat(idChat).catch((err) => {
+      console.error(
+        new Date().toISOString(),
+        "[RagWorkerClient] Gagal set sedang_diproses:",
+        err,
+      );
+    });
+
     const worker = this.pastikanWorkerJalan();
     const pesan: PesanKeWorkerRag = {
       idChat: idChat.toString(),
@@ -37,13 +50,10 @@ export class RagWorkerClient {
     const isDev = __filename.endsWith(".ts");
 
     if (isDev) {
-      // Development: __dirname → src/workers/email/
-      // Naik ke root proyek, lalu masuk ke dist/src/workers/email/
       const projectRoot = path.resolve(__dirname, "../../../../");
       return path.join(projectRoot, "dist", "src", "modules", "chat", "business", "RagWorker.js");
     }
 
-    // Production: __dirname → dist/src/workers/email/
     return path.resolve(__dirname, "RagWorker.js");
   }
 
@@ -53,7 +63,6 @@ export class RagWorkerClient {
 
     const workerPath = this.resolveWorkerPath();
 
-    // RagConfig dikirim lewat workerData — konsisten dengan pola EmailWorkerClient
     this.worker = new Worker(workerPath, {
       workerData: this.config,
     });
@@ -88,16 +97,31 @@ export class RagWorkerClient {
     const idChat = BigInt(hasil.idChat);
 
     if (hasil.status === "error") {
-      this.chatWsManager.broadcast(idChat, {
-        type: "error",
-        pesan: hasil.pesanError,
-      });
+      // Reset flag lalu tandai pesan terakhir gagal, kemudian broadcast error
+      this.repositoriChat.selesaiProsesChat(idChat)
+        .then(() => this.repositoriChat.tandaiPesanTerakhirGagal(idChat))
+        .then(() => {
+          this.chatWsManager.broadcast(idChat, {
+            type: "error",
+            pesan: hasil.pesanError,
+          });
+        })
+        .catch((err) => {
+          console.error(
+            new Date().toISOString(),
+            "[RagWorkerClient] Gagal menangani hasil error dari worker:",
+            err,
+          );
+        });
       return;
     }
 
-    // Simpan jawaban ke DB lalu broadcast — fire and forget dari perspektif worker
+    // Simpan jawaban ke DB, reset flag, lalu broadcast
     this.repositoriChat
       .tambahPesanChat(idChat, hasil.jawaban, true)
+      .then((pesanAsisten) => {
+        return this.repositoriChat.selesaiProsesChat(idChat).then(() => pesanAsisten);
+      })
       .then((pesanAsisten) => {
         this.chatWsManager.broadcast(idChat, {
           type: "jawaban",

@@ -3,14 +3,13 @@ import type WebSocket from "ws";
 
 import express from "express";
 
-import { DI } from "~/di/DI.js";
+import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 
+import { DI } from "../di/DI.js";
 import { auth } from "../middlewares.js";
-import { KontrolChat } from "../modules/chat/business/KontrolChat.js";
-import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
 const routerChat = express.Router();
-const kontrolChat = KontrolChat.instance;
+const kontrolChat = DI.provideKontrolChat();
 const repositoriSession = DI.provideRepositoriSession();
 
 /**
@@ -70,6 +69,8 @@ routerChat.post("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
  *         description: Pesan tersimpan, jawaban masuk antrian RAG
  *       404:
  *         description: Sesi chat tidak ditemukan
+ *       409:
+ *         description: Chat sedang diproses atau sudah dialihkan ke tiket
  */
 routerChat.post("/:idChat", auth([PeranPengguna.Karyawan]), (req, res, next) => {
   kontrolChat.balasChat(req, res).catch(next);
@@ -112,14 +113,12 @@ routerChat.get("/:id", auth([PeranPengguna.Karyawan]), (req, res, next) => {
 /**
  * Handler upgrade WebSocket untuk /api/chat/:idChat/ws
  * Dipanggil dari app.ts saat HTTP upgrade event.
- * Tidak melalui Express router karena WS tidak menggunakan HTTP response biasa.
  */
 export async function handleChatWsUpgrade(
   ws: WebSocket,
   req: IncomingMessage,
   idChat: bigint,
 ): Promise<void> {
-  // Baca session dari cookie
   const cookieHeader = req.headers.cookie ?? "";
   const cookies = Object.fromEntries(
     cookieHeader.split(";").map(c => c.trim().split("=").map(decodeURIComponent)),

@@ -5,5 +5,6 @@ export class PesanChat {
     public readonly pesan: string,
     public readonly tanggalDibuat: Date,
     public readonly chatAsisten: boolean,
+    public readonly gagal: boolean,
   ) {}
 }

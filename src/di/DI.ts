@@ -19,6 +19,7 @@ import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
+import { KontrolChat } from "~/modules/chat/business/KontrolChat";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
 import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
@@ -367,6 +368,18 @@ export class DI {
       );
     }
     return this.knowledgeBaseWorkerClient;
+  }
+
+  private static kontrolChat: KontrolChat | null = null;
+  static provideKontrolChat(): KontrolChat {
+    if (!this.kontrolChat) {
+      this.kontrolChat = new KontrolChat(
+        this.provideRepositoriChat(),
+        this.provideChatWsManager(),
+        this.provideRagWorkerClient(),
+      );
+    }
+    return this.kontrolChat;
   }
 
   static registerWsHandlers(): void {
