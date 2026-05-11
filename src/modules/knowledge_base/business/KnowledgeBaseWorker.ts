@@ -18,6 +18,7 @@
  * workerData yang diharapkan: { ragUrl: string }
  */
 
+import path from "node:path";
 import { parentPort, workerData } from "node:worker_threads";
 
 import type { PesanDariWorker, PesanKeWorker } from "../domain/PesanKnowledgeBaseWorker.js";
@@ -46,13 +47,14 @@ async function indeksDokumen(
   kirimKeParent({ tipe: "mulai", idDokumen });
 
   try {
+    const absoluteFilePath = path.resolve(process.cwd(), filePath);
     const response = await fetch(`${ragUrl}/knowledge-base`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         doc_id: docId,
         file_name: namaBerkas,
-        file_path: filePath,
+        file_path: absoluteFilePath,
       }),
     });
 
