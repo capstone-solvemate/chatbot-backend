@@ -344,6 +344,7 @@ export class DI {
     if (!this.kontrolKnowledgeBase) {
       this.kontrolKnowledgeBase = new KontrolKnowledgeBase(
         this.provideRepositoriKnowledgeBase(),
+        this.provideConfig().ragConfig,
       );
     }
     return this.kontrolKnowledgeBase;

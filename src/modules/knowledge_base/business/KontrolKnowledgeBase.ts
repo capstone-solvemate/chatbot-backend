@@ -3,6 +3,8 @@ import type { Request, Response } from "express";
 import fs from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 
+import type { RagConfig } from "~/core/config/domain/RagConfig.js";
+
 import type { RepositoriKnowledgeBase } from "../data/RepositoriKnowledgeBase.js";
 import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
 import type { PesanDariWorker } from "../domain/PesanKnowledgeBaseWorker.js";
@@ -15,6 +17,7 @@ import { validasiUploadDokumen } from "./dto/validators.js";
 export class KontrolKnowledgeBase {
   constructor(
     private readonly repositori: RepositoriKnowledgeBase,
+    private readonly ragConfig: RagConfig,
   ) {}
 
   /**
@@ -102,14 +105,84 @@ export class KontrolKnowledgeBase {
       return;
     }
 
+    // Hanya dokumen yang sudah selesai diproses atau gagal yang boleh dihapus.
+    // BelumDiproses  → dokumen baru masuk antrian, belum tentu belum diproses worker.
+    // SedangDiproses → worker sedang aktif mengindex, state RAG tidak konsisten jika dihapus.
+    const statusDitolak = [
+      StatusKnowledgeBase.BelumDiproses,
+      StatusKnowledgeBase.SedangDiproses,
+    ];
+    if (statusDitolak.includes(dokumen.status)) {
+      res.status(409).json({
+        error: "conflict",
+        message: "Dokumen belum atau sedang dalam proses indexing dan tidak dapat dihapus.",
+      });
+      return;
+    }
+
+    if (dokumen.status === StatusKnowledgeBase.SelesaiDiproses) {
+      await this.hapusDariRag(dokumen.docId);
+    }
+
     try {
       await fs.unlink(dokumen.path);
     }
     catch (fsError) {
-      console.error("File fisik tidak ditemukan atau gagal dihapus:", fsError);
+      console.error(
+        new Date().toISOString(),
+        "[KontrolKnowledgeBase] File fisik tidak ditemukan atau gagal dihapus:",
+        fsError,
+      );
     }
 
     await this.repositori.hapusDokumen(id);
     res.status(200).json({ message: "Dokumen berhasil dihapus" });
+  }
+
+  /**
+   * Menghapus dokumen dari RAG API secara synchronous.
+   * Melempar Error jika RAG mengembalikan response non-2xx,
+   * sehingga caller (hapusDokumen) dapat membatalkan operasi hapus.
+   */
+  private async hapusDariRag(docId: string): Promise<void> {
+    const url = `${this.ragConfig.url}/knowledge-base/${encodeURIComponent(docId)}`;
+
+    let response: globalThis.Response;
+    try {
+      response = await fetch(url, { method: "DELETE" });
+    }
+    catch (err) {
+      console.error(
+        new Date().toISOString(),
+        `[KontrolKnowledgeBase] Gagal menghubungi RAG API saat menghapus docId=${docId}:`,
+        err,
+      );
+      throw new Error("Gagal menghubungi RAG API. Dokumen tidak dihapus.");
+    }
+
+    if (response.status === 404) {
+      // Dokumen tidak ditemukan di RAG — kemungkinan sudah terhapus sebelumnya.
+      // Anggap kondisi ini sudah bersih, lanjutkan hapus dari DB.
+      console.warn(
+        new Date().toISOString(),
+        `[KontrolKnowledgeBase] Dokumen tidak ditemukan di RAG (404), lanjut hapus dari DB. docId=${docId}`,
+      );
+      return;
+    }
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as any;
+      const detail = body?.detail ?? response.statusText;
+      console.error(
+        new Date().toISOString(),
+        `[KontrolKnowledgeBase] RAG API menolak penghapusan docId=${docId}. HTTP ${response.status}: ${detail}`,
+      );
+      throw new Error(`RAG API mengembalikan error ${response.status} saat menghapus dokumen.`);
+    }
+
+    console.info(
+      new Date().toISOString(),
+      `[KontrolKnowledgeBase] Dokumen berhasil dihapus dari RAG. docId=${docId}`,
+    );
   }
 }
