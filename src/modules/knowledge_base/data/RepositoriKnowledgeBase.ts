@@ -5,6 +5,7 @@ import { Op } from "sequelize";
 import type { KnowledgeBase } from "../domain/KnowledgeBase.js";
 import type { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 
+import { statusKnowledgeBaseToInt } from "../domain/StatusKnowledgeBase.js";
 import { knowledgeBaseToRow, modelToKnowledgeBase } from "./converters.js";
 
 export type FilterDokumen = {
@@ -55,7 +56,7 @@ export class RepositoriKnowledgeBase {
   }
 
   async updateStatus(id: bigint, status: StatusKnowledgeBase): Promise<boolean> {
-    const [updated] = await this.modelKnowledgeBase.update({ status }, {
+    const [updated] = await this.modelKnowledgeBase.update({ status: statusKnowledgeBaseToInt(status) }, {
       where: { id: id.toString() },
     });
     return updated > 0;
