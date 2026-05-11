@@ -1,4 +1,4 @@
-import type { Model, ModelStatic, WhereOptions } from "sequelize";
+import type { Model, ModelStatic, Sequelize, WhereOptions } from "sequelize";
 
 import { Op } from "sequelize";
 
@@ -43,23 +43,38 @@ export class RepositoriTiket {
     private readonly modelTiket: ModelStatic<Model<any, any>>,
     private readonly modelPengguna: ModelStatic<Model<any, any>>,
     private readonly modelPesanTiket: ModelStatic<Model<any, any>>,
-  ) {
-
-  }
+    private readonly modelChat: ModelStatic<Model<any, any>>,
+    private readonly sequelize: Sequelize,
+  ) {}
 
   async buatTiket(data: Omit<Tiket, "id">): Promise<Tiket> {
     const now = new Date();
-    const model = await this.modelTiket.create({
-      judul: data.judul,
-      deskripsi: data.deskripsi,
-      id_pembuat: data.idPembuat,
-      id_chat: data.idChat.toString(),
-      id_kategori: data.idKategori,
-      status: data.status,
-      dibuat_pada: now,
-      diperbarui_pada: now,
-    });
-    return modelToTiket(model);
+
+    const tx = await this.sequelize.transaction();
+    try {
+      const model = await this.modelTiket.create({
+        judul: data.judul,
+        deskripsi: data.deskripsi,
+        id_pembuat: data.idPembuat,
+        id_chat: data.idChat.toString(),
+        id_kategori: data.idKategori,
+        status: data.status,
+        dibuat_pada: now,
+        diperbarui_pada: now,
+      }, { transaction: tx });
+
+      await this.modelChat.update(
+        { dialihkan_ke_tiket: true },
+        { where: { id: data.idChat.toString() }, transaction: tx },
+      );
+
+      await tx.commit();
+      return modelToTiket(model);
+    }
+    catch (e) {
+      await tx.rollback();
+      throw e;
+    }
   }
 
   async getById(id: bigint): Promise<TiketDenganPembuat | null> {

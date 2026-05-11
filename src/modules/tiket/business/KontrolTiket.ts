@@ -59,6 +59,16 @@ export class KontrolTiket {
     const dto = validasiBuatTiket(req);
     const sesi = req.sesiPengguna!;
 
+    // Validasi chat: harus ada dan milik pengguna yang sedang login
+    const chat = await this.repositoriChat.getChatById(dto.idChat);
+    if (!chat) {
+      res.status(404).json({ success: false, message: "Chat tidak ditemukan." });
+      return;
+    }
+    if (chat.idPembuat !== sesi.idPengguna) {
+      throw new ForbiddenError();
+    }
+
     const tiket = await this.repositoriTiket.buatTiket(
       new Tiket(
         0n,

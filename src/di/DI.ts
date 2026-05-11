@@ -229,6 +229,8 @@ export class DI {
         this.provideModelTiket(),
         this.provideModelPengguna(),
         this.provideModelPesanTiket(),
+        this.provideModelChat(),
+        this.provideSequelize(),
       );
     }
     return this.repositoriTiket;
