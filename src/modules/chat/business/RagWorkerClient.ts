@@ -5,14 +5,9 @@ import type { RagConfig } from "~/core/config/domain/RagConfig.js";
 
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { PesanDariWorkerRag, PesanKeWorkerRag, RiwayatRag } from "../domain/PesanRagWorker.js";
+import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { ChatWsManager } from "./ChatWsManager.js";
 
-/**
- * RagWorkerClient — digunakan oleh main thread untuk:
- * - Spawn worker thread RagWorker
- * - Mengirim tugas RAG ke worker
- * - Menerima hasil dari worker → simpan jawaban ke DB → broadcast via WS
- */
 export class RagWorkerClient {
   private worker: Worker | null = null;
 
@@ -20,16 +15,10 @@ export class RagWorkerClient {
     private readonly config: RagConfig,
     private readonly chatWsManager: ChatWsManager,
     private readonly repositoriChat: RepositoriChat,
+    private readonly chatEventBus: ChatEventBus,
   ) {}
 
-  /**
-   * Tambahkan tugas RAG ke antrian worker.
-   * Worker akan di-start otomatis jika belum berjalan.
-   * Set sedang_diproses = true di DB sebelum kirim ke worker.
-   * Non-blocking — main thread tidak menunggu RAG selesai.
-   */
   tambahTugas(idChat: bigint, history: RiwayatRag[]): void {
-    // Set flag di DB — fire and forget, tidak block request
     this.repositoriChat.mulaiProsesChat(idChat).catch((err) => {
       console.error(
         new Date().toISOString(),
@@ -97,7 +86,6 @@ export class RagWorkerClient {
     const idChat = BigInt(hasil.idChat);
 
     if (hasil.status === "error") {
-      // Reset flag lalu tandai pesan terakhir gagal, kemudian broadcast error
       this.repositoriChat.selesaiProsesChat(idChat)
         .then(() => this.repositoriChat.tandaiPesanTerakhirGagal(idChat))
         .then(() => {
@@ -116,11 +104,23 @@ export class RagWorkerClient {
       return;
     }
 
-    // Simpan jawaban ke DB, reset flag, lalu broadcast
     this.repositoriChat
       .tambahPesanChat(idChat, hasil.jawaban, true)
       .then((pesanAsisten) => {
         return this.repositoriChat.selesaiProsesChat(idChat).then(() => pesanAsisten);
+      })
+      .then((pesanAsisten) => {
+        // Fetch chat untuk dapatkan idPembuat sebelum emit event
+        return this.repositoriChat.getChatById(idChat).then((chat) => {
+          if (chat) {
+            this.chatEventBus.emit("pesan_baru", {
+              idChat,
+              idPembuat: chat.idPembuat,
+              tanggalDibuat: pesanAsisten.tanggalDibuat,
+            });
+          }
+          return pesanAsisten;
+        });
       })
       .then((pesanAsisten) => {
         this.chatWsManager.broadcast(idChat, {
@@ -145,10 +145,6 @@ export class RagWorkerClient {
       });
   }
 
-  /**
-   * Hentikan worker thread dengan bersih.
-   * Panggil ini saat aplikasi akan shutdown (misalnya di SIGTERM handler).
-   */
   berhenti(): void {
     if (this.worker) {
       this.worker.terminate();

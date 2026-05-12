@@ -3,6 +3,7 @@ import type WebSocket from "ws";
 
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { KoneksiChat } from "../domain/KoneksiChat.js";
+import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { ChatWsManager } from "./ChatWsManager.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 
@@ -13,15 +14,11 @@ export class KontrolChat {
     private readonly repositoriChat: RepositoriChat,
     private readonly chatWsManager: ChatWsManager,
     private readonly ragWorkerClient: RagWorkerClient,
+    private readonly chatEventBus: ChatEventBus,
   ) {
-    // Fire and forget — reset chat yang sedang_diproses = true akibat restart
     this.selesaikanChatYangTerputus();
   }
 
-  /**
-   * Dipanggil saat startup — reset semua chat yang tertinggal dalam kondisi
-   * sedang_diproses = true akibat server restart di tengah pemrosesan RAG.
-   */
   private selesaikanChatYangTerputus(): void {
     this.repositoriChat
       .pulihkanChatTerputus()
@@ -42,10 +39,6 @@ export class KontrolChat {
       });
   }
 
-  /**
-   * POST /api/chat
-   * Buat sesi chat baru, simpan pesan pertama, trigger RAG async.
-   */
   async submitPertanyaan(req: Request, res: Response): Promise<void> {
     const dto = validasiPertanyaan(req.body);
     const idPembuat = req.sesiPengguna!.idPengguna!;
@@ -57,6 +50,19 @@ export class KontrolChat {
     const idChat = chatBaru.id;
 
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
+
+    this.chatEventBus.emit("chat_dibuat", {
+      idChat: chatBaru.id,
+      idPembuat,
+      subjek: chatBaru.subjek,
+      tanggalDibuat: chatBaru.tanggalDibuat,
+    });
+
+    this.chatEventBus.emit("pesan_baru", {
+      idChat,
+      idPembuat,
+      tanggalDibuat: pesanKaryawan.tanggalDibuat,
+    });
 
     this.ragWorkerClient.tambahTugas(idChat, [
       { role: "user", content: dto.pesan },
@@ -72,10 +78,6 @@ export class KontrolChat {
     });
   }
 
-  /**
-   * POST /api/chat/:idChat
-   * Balas pesan dalam sesi chat yang sudah ada, trigger RAG async dengan history lengkap.
-   */
   async balasChat(req: Request, res: Response): Promise<void> {
     const dto = validasiBalasChat(req.body);
     const idPembuat = req.sesiPengguna!.idPengguna!;
@@ -100,6 +102,12 @@ export class KontrolChat {
     const historiPesan = await this.repositoriChat.getHistoriPesan(idChat);
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
+    this.chatEventBus.emit("pesan_baru", {
+      idChat,
+      idPembuat,
+      tanggalDibuat: pesanKaryawan.tanggalDibuat,
+    });
+
     const history = [
       ...historiPesan.map(p => ({
         role: p.chatAsisten ? "assistant" as const : "user" as const,
@@ -120,10 +128,6 @@ export class KontrolChat {
     });
   }
 
-  /**
-   * GET /api/chat
-   * Riwayat semua sesi chat milik pengguna.
-   */
   async getRiwayatChat(req: Request, res: Response): Promise<void> {
     const idPembuat = req.sesiPengguna!.idPengguna!;
     const chats = await this.repositoriChat.getSemuaChatPengguna(idPembuat);
@@ -137,10 +141,6 @@ export class KontrolChat {
     })));
   }
 
-  /**
-   * GET /api/chat/:id
-   * Detail pesan dalam satu sesi chat.
-   */
   async getDetailChat(req: Request, res: Response): Promise<void> {
     const idPembuat = req.sesiPengguna!.idPengguna!;
     const idChat = BigInt(req.params.id);
@@ -169,11 +169,6 @@ export class KontrolChat {
     });
   }
 
-  /**
-   * WS /api/chat/:idChat/ws
-   * Handle koneksi WebSocket baru — verifikasi kepemilikan chat,
-   * daftarkan ke ChatWsManager, handle pesan masuk dan disconnect.
-   */
   async handleWsConnect(
     ws: WebSocket,
     idChat: bigint,

@@ -23,6 +23,7 @@ import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
 import { KontrolChat } from "~/modules/chat/business/KontrolChat";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
+import { ChatEventBus } from "~/modules/chat/event/ChatEventBus";
 import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
 import { RepositoriFaq } from "~/modules/faq/data/RepositoriFaq";
 import { KnowledgeBaseWorkerClient } from "~/modules/knowledge_base/business/KnowledgeBaseWorkerClient";
@@ -208,6 +209,14 @@ export class DI {
     return this.kontrolOtentikasi;
   }
 
+  private static chatEventBus: ChatEventBus | null = null;
+  static provideChatEventBus(): ChatEventBus {
+    if (!this.chatEventBus) {
+      this.chatEventBus = new ChatEventBus();
+    }
+    return this.chatEventBus;
+  }
+
   private static ragWorkerClient: RagWorkerClient | null = null;
   static provideRagWorkerClient(): RagWorkerClient {
     if (!this.ragWorkerClient) {
@@ -215,6 +224,7 @@ export class DI {
         this.provideConfig().ragConfig,
         this.provideChatWsManager(),
         this.provideRepositoriChat(),
+        this.provideChatEventBus(),
       );
     }
     return this.ragWorkerClient;
@@ -386,6 +396,7 @@ export class DI {
         this.provideRepositoriChat(),
         this.provideChatWsManager(),
         this.provideRagWorkerClient(),
+        this.provideChatEventBus(),
       );
     }
     return this.kontrolChat;
