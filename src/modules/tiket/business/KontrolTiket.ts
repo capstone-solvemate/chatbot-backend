@@ -5,6 +5,8 @@ import { DI } from "~/di/DI.js";
 
 import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
 import type { TiketEventBus } from "../event/TiketEventBus.js";
+import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
+import type { Lampiran } from "../../upload/domain/Lampiran.js";
 import type {
   PesanChatResponseDto,
   PesanTiketResponseDto,
@@ -52,6 +54,7 @@ export class KontrolTiket {
   constructor(
     private readonly repositoriTiket: RepositoriTiket,
     private readonly tiketEventBus: TiketEventBus,
+    private readonly repositoriLampiran: RepositoriLampiran,
   ) {}
 
   private readonly repositoriChat = DI.provideRepositoriChat();
@@ -130,9 +133,23 @@ export class KontrolTiket {
     }
 
     const pesans = await this.repositoriTiket.getPesanByTiket(idChat);
+
+    // Batch-fetch lampiran untuk semua pesan tiket
+    const pesanIds = pesans.map(p => p.id);
+    const lampiranMap = pesanIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesanBatch("tiket", pesanIds)
+      : new Map();
+
     const data: TiketDetailResponseDto = {
       ...tiketToDto(result),
-      pesanTiket: pesans.map(pesanTiketToDto),
+      pesanTiket: pesans.map(p => ({
+        ...pesanTiketToDto(p),
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
+      })),
     };
 
     res.json({ success: true, data });
@@ -153,16 +170,40 @@ export class KontrolTiket {
 
     const historiChat = await this.repositoriChat.getHistoriPesan(result.tiket.idChat);
 
+    // Batch-fetch lampiran untuk pesan tiket
+    const pesanTiketIds = pesans.map(p => p.id);
+    const lampiranMap = pesanTiketIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesanBatch("tiket", pesanTiketIds)
+      : new Map();
+
+    // Batch-fetch lampiran untuk pesan chat
+    const pesanChatIds = historiChat.map(p => p.id);
+    const lampiranChatMap = pesanChatIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanChatIds)
+      : new Map();
+
     const data: TiketAdminDetailResponseDto = {
       ...tiketToDto(result),
       emailPembuat: result.emailPembuat,
-      pesanTiket: pesans.map(pesanTiketToDto),
-      historiChat: historiChat.map((p): PesanChatResponseDto => ({
+      pesanTiket: pesans.map(p => ({
+        ...pesanTiketToDto(p),
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
+      })),
+      historiChat: historiChat.map((p): PesanChatResponseDto & { lampiran: any[] } => ({
         id: p.id.toString(),
         idChat: p.idChat.toString(),
         pesan: p.pesan,
         dibuatPada: p.tanggalDibuat.toISOString(),
         dariAsisten: p.chatAsisten,
+        lampiran: (lampiranChatMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
       })),
     };
 
@@ -224,6 +265,16 @@ export class KontrolTiket {
       new PesanTiket(0n, result.tiket.id, sesi.idPengguna!, dto.pesan, new Date()),
     );
 
+    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
+    if (dto.lampiranIds.length > 0) {
+      const ids = dto.lampiranIds.map(id => BigInt(id));
+      await this.repositoriLampiran.asosiasikanKePesan(ids, pesan.id, "tiket");
+    }
+
+    const lampiran = dto.lampiranIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesan("tiket", pesan.id)
+      : [];
+
     this.tiketEventBus.emit("pesan_baru", {
       idTiket: result.tiket.idChat,
       judulTiket: result.tiket.judul,
@@ -232,7 +283,17 @@ export class KontrolTiket {
       idPemilikTiket: result.tiket.idPembuat,
     });
 
-    res.status(201).json({ success: true, data: pesanTiketToDto(pesan) });
+    res.status(201).json({
+      success: true,
+      data: {
+        ...pesanTiketToDto(pesan),
+        lampiran: lampiran.map(l => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
+      },
+    });
   }
 
   async getRingkasanStatusTiket(req: Request, res: Response): Promise<void> {
