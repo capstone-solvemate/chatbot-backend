@@ -6,6 +6,8 @@ import type { KoneksiChat } from "../domain/KoneksiChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { ChatWsManager } from "./ChatWsManager.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
+import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
+import type { Lampiran } from "../../upload/domain/Lampiran.js";
 
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
 
@@ -15,6 +17,7 @@ export class KontrolChat {
     private readonly chatWsManager: ChatWsManager,
     private readonly ragWorkerClient: RagWorkerClient,
     private readonly chatEventBus: ChatEventBus,
+    private readonly repositoriLampiran: RepositoriLampiran,
   ) {
     this.selesaikanChatYangTerputus();
   }
@@ -51,6 +54,16 @@ export class KontrolChat {
 
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
+    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
+    if (dto.lampiranIds.length > 0) {
+      const ids = dto.lampiranIds.map(id => BigInt(id));
+      await this.repositoriLampiran.asosiasikanKePesan(ids, pesanKaryawan.id, "chat");
+    }
+
+    const lampiran = dto.lampiranIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesan("chat", pesanKaryawan.id)
+      : [];
+
     this.chatEventBus.emit("chat_dibuat", {
       idChat: chatBaru.id,
       idPembuat,
@@ -68,6 +81,11 @@ export class KontrolChat {
         id: pesanKaryawan.id.toString(),
         pesan: pesanKaryawan.pesan,
         tanggalDibuat: pesanKaryawan.tanggalDibuat,
+        lampiran: lampiran.map(l => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
       },
     });
   }
@@ -96,6 +114,16 @@ export class KontrolChat {
     const historiPesan = await this.repositoriChat.getHistoriPesan(idChat);
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
+    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
+    if (dto.lampiranIds.length > 0) {
+      const ids = dto.lampiranIds.map(id => BigInt(id));
+      await this.repositoriLampiran.asosiasikanKePesan(ids, pesanKaryawan.id, "chat");
+    }
+
+    const lampiran = dto.lampiranIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesan("chat", pesanKaryawan.id)
+      : [];
+
     this.chatEventBus.emit("pesan_baru", {
       idChat,
       idPembuat,
@@ -118,6 +146,11 @@ export class KontrolChat {
         id: pesanKaryawan.id.toString(),
         pesan: pesanKaryawan.pesan,
         tanggalDibuat: pesanKaryawan.tanggalDibuat,
+        lampiran: lampiran.map(l => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
       },
     });
   }
@@ -147,6 +180,12 @@ export class KontrolChat {
 
     const pesan = await this.repositoriChat.getHistoriPesan(idChat);
 
+    // Batch-fetch semua lampiran untuk semua pesan sekaligus
+    const pesanIds = pesan.map(p => p.id);
+    const lampiranMap = pesanIds.length > 0
+      ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanIds)
+      : new Map();
+
     res.status(200).json({
       id: chat.id.toString(),
       subjek: chat.subjek,
@@ -159,6 +198,11 @@ export class KontrolChat {
         chatAsisten: p.chatAsisten,
         tanggalDibuat: p.tanggalDibuat,
         gagal: p.gagal,
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
+          id: l.id.toString(),
+          url: l.url,
+          namaAsli: l.namaAsli,
+        })),
       })),
     });
   }

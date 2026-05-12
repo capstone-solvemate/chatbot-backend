@@ -18,6 +18,7 @@ import { createModelPesanChat } from "~/models/ModelPesanChat";
 import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
+import { createModelLampiran } from "~/models/ModelLampiran";
 import { createModelTiket } from "~/models/ModelTiket";
 import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
 import { KontrolChat } from "~/modules/chat/business/KontrolChat";
@@ -50,6 +51,8 @@ import { RepositoriKategori } from "~/modules/settings/kategori/data/RepositoriK
 import { KontrolTiket } from "~/modules/tiket/business/KontrolTiket";
 import { RepositoriTiket } from "~/modules/tiket/data/RepositoriTiket";
 import { TiketEventBus } from "~/modules/tiket/event/TiketEventBus";
+import { RepositoriLampiran } from "~/modules/upload/data/RepositoriLampiran";
+import { KontrolUpload } from "~/modules/upload/business/KontrolUpload";
 
 export class DI {
   private static config: Config | null = null;
@@ -264,6 +267,7 @@ export class DI {
       this.kontrolTiket = new KontrolTiket(
         this.provideRepositoriTiket(),
         this.provideTiketEventBus(),
+        this.provideRepositoriLampiran(),
       );
     }
     return this.kontrolTiket;
@@ -403,6 +407,7 @@ export class DI {
         this.provideChatWsManager(),
         this.provideRagWorkerClient(),
         this.provideChatEventBus(),
+        this.provideRepositoriLampiran(),
       );
     }
     return this.kontrolChat;
@@ -520,6 +525,36 @@ export class DI {
       );
     }
     return this.dashboardSubscriber;
+  }
+
+  // --- Lampiran / Upload ---
+
+  private static modelLampiran: ReturnType<typeof createModelLampiran> | null = null;
+  static provideModelLampiran(): ReturnType<typeof createModelLampiran> {
+    if (!this.modelLampiran) {
+      this.modelLampiran = createModelLampiran(this.provideSequelize());
+    }
+    return this.modelLampiran;
+  }
+
+  private static repositoriLampiran: RepositoriLampiran | null = null;
+  static provideRepositoriLampiran(): RepositoriLampiran {
+    if (!this.repositoriLampiran) {
+      this.repositoriLampiran = new RepositoriLampiran(
+        this.provideModelLampiran(),
+      );
+    }
+    return this.repositoriLampiran;
+  }
+
+  private static kontrolUpload: KontrolUpload | null = null;
+  static provideKontrolUpload(): KontrolUpload {
+    if (!this.kontrolUpload) {
+      this.kontrolUpload = new KontrolUpload(
+        this.provideRepositoriLampiran(),
+      );
+    }
+    return this.kontrolUpload;
   }
 
   static registerWsHandlers(): void {

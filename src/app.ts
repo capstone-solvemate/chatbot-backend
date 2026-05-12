@@ -8,6 +8,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "node:path";
 
 import type MessageResponse from "./interfaces/message-response.js";
 
@@ -23,6 +24,7 @@ app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use("/uploads/images", express.static(path.join(process.cwd(), "uploads", "images")));
 app.use(cookieParser());
 
 app.use(middlewares.session);
