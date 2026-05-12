@@ -1,143 +1,184 @@
+import type { Sequelize } from "sequelize";
+
 import { QueryTypes } from "sequelize";
 
-import { DI } from "~/di/DI.js";
 import { StatusTiket } from "~/modules/tiket/domain/StatusTiket.js";
 
 import type { FilterDashboard, HistoryItem } from "../domain/DashboardPayload.js";
 
-const NAMA_HARI = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const NAMA_BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 export class RepositoriDashboard {
-  static readonly instance = new RepositoriDashboard();
-  private constructor() {}
+  constructor(private readonly sequelize: Sequelize) {}
 
-  private get sequelize() {
-    return DI.provideSequelize();
-  }
+  // ─── Tiket ────────────────────────────────────────────────────────────────
 
-  async getTotalTiket(): Promise<number> {
+  async getTotalTiket(filter: FilterDashboard): Promise<number> {
+    const { where, replacements } = this.buildTiketWhere(filter);
     const rows = await this.sequelize.query<{ jumlah: string }>(
-      `SELECT COUNT(*) AS jumlah FROM tiket`,
-      { type: QueryTypes.SELECT },
+      `SELECT COUNT(*) AS jumlah FROM tiket ${where}`,
+      { type: QueryTypes.SELECT, replacements },
     );
     return Number(rows[0]?.jumlah ?? 0);
   }
 
-  async getTiketTerbuka(): Promise<number> {
+  async getTiketTerbuka(filter: FilterDashboard): Promise<number> {
+    const { where, replacements } = this.buildTiketWhere(filter);
     const rows = await this.sequelize.query<{ jumlah: string }>(
-      `SELECT COUNT(*) AS jumlah FROM tiket WHERE status = :status`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { status: StatusTiket.Open },
-      },
+      `SELECT COUNT(*) AS jumlah FROM tiket ${where}
+       ${where ? "AND" : "WHERE"} status = :status`,
+      { type: QueryTypes.SELECT, replacements: { ...replacements, status: StatusTiket.Open } },
     );
     return Number(rows[0]?.jumlah ?? 0);
   }
 
-  /**
-   * Query history tiket sesuai filter.
-   * Granularitas otomatis ditentukan berdasarkan filter yang aktif.
-   */
-  async getHistory(filter: FilterDashboard): Promise<HistoryItem[]> {
-    if (filter.bulan !== undefined && filter.minggu !== undefined) {
-      return this.getHistoryPerHariDalamMinggu(filter.tahun, filter.bulan, filter.minggu);
-    }
+  async getHistoryTiket(filter: FilterDashboard): Promise<HistoryItem[]> {
     if (filter.bulan !== undefined) {
-      return this.getHistoryPerHari(filter.tahun, filter.bulan);
+      return this.getHistoryTiketPerHari(filter.tahun, filter.bulan);
     }
-    return this.getHistoryPerBulan(filter.tahun);
+    return this.getHistoryTiketPerBulan(filter.tahun);
   }
 
-  /** Filter: tahun saja → per bulan (Jan–Des) */
-  private async getHistoryPerBulan(tahun: number): Promise<HistoryItem[]> {
+  private async getHistoryTiketPerBulan(tahun: number): Promise<HistoryItem[]> {
     const rows = await this.sequelize.query<{ bulan: string; jumlah: string }>(
       `SELECT MONTH(dibuat_pada) AS bulan, COUNT(*) AS jumlah
        FROM tiket
        WHERE YEAR(dibuat_pada) = :tahun
        GROUP BY MONTH(dibuat_pada)
        ORDER BY bulan ASC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { tahun },
-      },
+      { type: QueryTypes.SELECT, replacements: { tahun } },
     );
-
-    // Isi semua 12 bulan, bulan tanpa data = 0
     return Array.from({ length: 12 }, (_, i) => {
-      const bulanKe = i + 1;
-      const row = rows.find(r => Number(r.bulan) === bulanKe);
-      return {
-        label: NAMA_BULAN[i],
-        jumlah: row ? Number(row.jumlah) : 0,
-      };
+      const row = rows.find(r => Number(r.bulan) === i + 1);
+      return { label: NAMA_BULAN[i], jumlah: row ? Number(row.jumlah) : 0 };
     });
   }
 
-  /** Filter: tahun + bulan → per hari (1–akhir bulan) */
-  private async getHistoryPerHari(tahun: number, bulan: number): Promise<HistoryItem[]> {
+  private async getHistoryTiketPerHari(tahun: number, bulan: number): Promise<HistoryItem[]> {
     const rows = await this.sequelize.query<{ hari: string; jumlah: string }>(
       `SELECT DAY(dibuat_pada) AS hari, COUNT(*) AS jumlah
        FROM tiket
        WHERE YEAR(dibuat_pada) = :tahun AND MONTH(dibuat_pada) = :bulan
        GROUP BY DAY(dibuat_pada)
        ORDER BY hari ASC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { tahun, bulan },
-      },
+      { type: QueryTypes.SELECT, replacements: { tahun, bulan } },
     );
-
     const jumlahHari = new Date(tahun, bulan, 0).getDate();
     return Array.from({ length: jumlahHari }, (_, i) => {
-      const hariKe = i + 1;
-      const row = rows.find(r => Number(r.hari) === hariKe);
+      const row = rows.find(r => Number(r.hari) === i + 1);
+      return { label: String(i + 1), jumlah: row ? Number(row.jumlah) : 0 };
+    });
+  }
+
+  // ─── Chat ─────────────────────────────────────────────────────────────────
+
+  async getTotalSesiChat(filter: FilterDashboard): Promise<number> {
+    const { where, replacements } = this.buildChatWhere(filter);
+    const rows = await this.sequelize.query<{ jumlah: string }>(
+      `SELECT COUNT(*) AS jumlah FROM chat ${where}`,
+      { type: QueryTypes.SELECT, replacements },
+    );
+    return Number(rows[0]?.jumlah ?? 0);
+  }
+
+  async getHistorySesiChat(filter: FilterDashboard): Promise<HistoryItem[]> {
+    if (filter.bulan !== undefined) {
+      return this.getHistorySesiChatPerHari(filter.tahun, filter.bulan);
+    }
+    return this.getHistorySesiChatPerBulan(filter.tahun);
+  }
+
+  private async getHistorySesiChatPerBulan(tahun: number): Promise<HistoryItem[]> {
+    const rows = await this.sequelize.query<{ bulan: string; jumlah: string }>(
+      `SELECT MONTH(tanggal_dibuat) AS bulan, COUNT(*) AS jumlah
+       FROM chat
+       WHERE YEAR(tanggal_dibuat) = :tahun
+       GROUP BY MONTH(tanggal_dibuat)
+       ORDER BY bulan ASC`,
+      { type: QueryTypes.SELECT, replacements: { tahun } },
+    );
+    return Array.from({ length: 12 }, (_, i) => {
+      const row = rows.find(r => Number(r.bulan) === i + 1);
+      return { label: NAMA_BULAN[i], jumlah: row ? Number(row.jumlah) : 0 };
+    });
+  }
+
+  private async getHistorySesiChatPerHari(tahun: number, bulan: number): Promise<HistoryItem[]> {
+    const rows = await this.sequelize.query<{ hari: string; jumlah: string }>(
+      `SELECT DAY(tanggal_dibuat) AS hari, COUNT(*) AS jumlah
+       FROM chat
+       WHERE YEAR(tanggal_dibuat) = :tahun AND MONTH(tanggal_dibuat) = :bulan
+       GROUP BY DAY(tanggal_dibuat)
+       ORDER BY hari ASC`,
+      { type: QueryTypes.SELECT, replacements: { tahun, bulan } },
+    );
+    const jumlahHari = new Date(tahun, bulan, 0).getDate();
+    return Array.from({ length: jumlahHari }, (_, i) => {
+      const row = rows.find(r => Number(r.hari) === i + 1);
+      return { label: String(i + 1), jumlah: row ? Number(row.jumlah) : 0 };
+    });
+  }
+
+  // ─── Cross ────────────────────────────────────────────────────────────────
+
+  async getDeflectionRate(filter: FilterDashboard): Promise<number> {
+    const [totalChat, totalTiket] = await Promise.all([
+      this.getTotalSesiChat(filter),
+      this.getTotalTiket(filter),
+    ]);
+    if (totalChat === 0)
+      return 100;
+    return Math.round((1 - totalTiket / totalChat) * 100);
+  }
+
+  async getAvgAktivitasPerJam(filter: FilterDashboard): Promise<HistoryItem[]> {
+    const { where: whereTiket, replacements: repTiket } = this.buildTiketWhere(filter);
+    const { where: whereChat, replacements: repChat } = this.buildChatWhere(filter);
+
+    const [rowsTiket, rowsChat] = await Promise.all([
+      this.sequelize.query<{ jam: string; jumlah: string }>(
+        `SELECT HOUR(dibuat_pada) AS jam, COUNT(*) AS jumlah
+         FROM tiket ${whereTiket}
+         GROUP BY HOUR(dibuat_pada)`,
+        { type: QueryTypes.SELECT, replacements: repTiket },
+      ),
+      this.sequelize.query<{ jam: string; jumlah: string }>(
+        `SELECT HOUR(tanggal_dibuat) AS jam, COUNT(*) AS jumlah
+         FROM chat ${whereChat}
+         GROUP BY HOUR(tanggal_dibuat)`,
+        { type: QueryTypes.SELECT, replacements: repChat },
+      ),
+    ]);
+
+    return Array.from({ length: 24 }, (_, i) => {
+      const tiket = rowsTiket.find(r => Number(r.jam) === i);
+      const chat = rowsChat.find(r => Number(r.jam) === i);
       return {
-        label: String(hariKe),
-        jumlah: row ? Number(row.jumlah) : 0,
+        label: String(i).padStart(2, "0"),
+        jumlah: (tiket ? Number(tiket.jumlah) : 0) + (chat ? Number(chat.jumlah) : 0),
       };
     });
   }
 
-  /**
-   * Filter: tahun + bulan + minggu → per hari dalam minggu tersebut (Sen–Min).
-   * Minggu ke-N dihitung dari hari pertama bulan tersebut.
-   * Contoh: minggu=1 → hari 1 s.d. 7, minggu=2 → hari 8 s.d. 14, dst.
-   */
-  private async getHistoryPerHariDalamMinggu(
-    tahun: number,
-    bulan: number,
-    minggu: number,
-  ): Promise<HistoryItem[]> {
-    const hariMulai = (minggu - 1) * 7 + 1;
-    const hariSelesai = Math.min(minggu * 7, new Date(tahun, bulan, 0).getDate());
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    const rows = await this.sequelize.query<{ hari: string; hari_minggu: string; jumlah: string }>(
-      `SELECT DAY(dibuat_pada) AS hari, DAYOFWEEK(dibuat_pada) AS hari_minggu, COUNT(*) AS jumlah
-       FROM tiket
-       WHERE YEAR(dibuat_pada) = :tahun
-         AND MONTH(dibuat_pada) = :bulan
-         AND DAY(dibuat_pada) BETWEEN :hariMulai AND :hariSelesai
-       GROUP BY DAY(dibuat_pada), DAYOFWEEK(dibuat_pada)
-       ORDER BY hari ASC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { tahun, bulan, hariMulai, hariSelesai },
-      },
-    );
+  private buildTiketWhere(filter: FilterDashboard): { where: string; replacements: Record<string, any> } {
+    const replacements: Record<string, any> = { tahun: filter.tahun };
+    let where = "WHERE YEAR(dibuat_pada) = :tahun";
+    if (filter.bulan !== undefined) {
+      where += " AND MONTH(dibuat_pada) = :bulan";
+      replacements.bulan = filter.bulan;
+    }
+    return { where, replacements };
+  }
 
-    // Buat array hari dalam range minggu ini
-    return Array.from({ length: hariSelesai - hariMulai + 1 }, (_, i) => {
-      const hariKe = hariMulai + i;
-      const row = rows.find(r => Number(r.hari) === hariKe);
-      // DAYOFWEEK: 1=Minggu, 2=Senin, ..., 7=Sabtu
-      const dayOfWeek = row
-        ? Number(row.hari_minggu)
-        : new Date(tahun, bulan - 1, hariKe).getDay() + 1;
-      return {
-        label: NAMA_HARI[dayOfWeek - 1],
-        jumlah: row ? Number(row.jumlah) : 0,
-      };
-    });
+  private buildChatWhere(filter: FilterDashboard): { where: string; replacements: Record<string, any> } {
+    const replacements: Record<string, any> = { tahun: filter.tahun };
+    let where = "WHERE YEAR(tanggal_dibuat) = :tahun";
+    if (filter.bulan !== undefined) {
+      where += " AND MONTH(tanggal_dibuat) = :bulan";
+      replacements.bulan = filter.bulan;
+    }
+    return { where, replacements };
   }
 }

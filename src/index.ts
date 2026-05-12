@@ -41,3 +41,4 @@ server.on("error", (err) => {
 
 DI.registerWsHandlers();
 DI.provideNotifikasiSubscriber().registerSubscribers();
+DI.provideDashboardSubscriber().registerSubscribers();

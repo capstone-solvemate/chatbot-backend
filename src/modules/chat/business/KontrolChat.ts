@@ -58,12 +58,6 @@ export class KontrolChat {
       tanggalDibuat: chatBaru.tanggalDibuat,
     });
 
-    this.chatEventBus.emit("pesan_baru", {
-      idChat,
-      idPembuat,
-      tanggalDibuat: pesanKaryawan.tanggalDibuat,
-    });
-
     this.ragWorkerClient.tambahTugas(idChat, [
       { role: "user", content: dto.pesan },
     ]);

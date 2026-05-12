@@ -5,22 +5,21 @@ import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
 import type { FilterDashboard } from "../domain/DashboardPayload.js";
 import type { KontrolDashboard } from "./KontrolDashboard.js";
 
-type KoneksiDashboard = {
+type KoneksiChatbotMonitoring = {
   ws: WebSocket;
   idSession: string;
   filter: FilterDashboard;
 };
 
-export class DashboardWsManager implements IWsSessionHandler {
+export class ChatbotMonitoringWsManager implements IWsSessionHandler {
   constructor(private readonly kontrolDashboard: KontrolDashboard) {}
 
-  private readonly bySession = new Map<string, Set<KoneksiDashboard>>();
+  private readonly bySession = new Map<string, Set<KoneksiChatbotMonitoring>>();
 
   async tambahKoneksi(ws: WebSocket, idSession: string, filter: FilterDashboard): Promise<void> {
-    const koneksi: KoneksiDashboard = { ws, idSession, filter };
+    const koneksi: KoneksiChatbotMonitoring = { ws, idSession, filter };
     this.tambah(koneksi);
 
-    // Kirim payload awal
     await this.kirimPayload(koneksi);
 
     ws.on("message", (raw) => {
@@ -32,15 +31,11 @@ export class DashboardWsManager implements IWsSessionHandler {
     });
 
     ws.on("error", (err) => {
-      console.error(new Date().toISOString(), "[DashboardWsManager] WS error:", err);
+      console.error(new Date().toISOString(), "[ChatbotMonitoringWsManager] WS error:", err);
       this.hapus(koneksi);
     });
   }
 
-  /**
-   * Dipanggil oleh DashboardSubscriber saat ada event relevan.
-   * Hanya push ke koneksi yang filter-nya mencakup tanggal event.
-   */
   async broadcastJikaCocok(tanggal: Date): Promise<void> {
     const tahun = tanggal.getFullYear();
     const bulan = tanggal.getMonth() + 1;
@@ -53,7 +48,7 @@ export class DashboardWsManager implements IWsSessionHandler {
 
         if (tahunCocok && bulanCocok) {
           await this.kirimPayload(koneksi).catch((err) => {
-            console.error(new Date().toISOString(), "[DashboardWsManager] Gagal kirim payload:", err);
+            console.error(new Date().toISOString(), "[ChatbotMonitoringWsManager] Gagal kirim payload:", err);
           });
         }
       }
@@ -75,14 +70,14 @@ export class DashboardWsManager implements IWsSessionHandler {
     this.bySession.delete(idSession);
   }
 
-  private tambah(koneksi: KoneksiDashboard): void {
+  private tambah(koneksi: KoneksiChatbotMonitoring): void {
     if (!this.bySession.has(koneksi.idSession)) {
       this.bySession.set(koneksi.idSession, new Set());
     }
     this.bySession.get(koneksi.idSession)!.add(koneksi);
   }
 
-  private hapus(koneksi: KoneksiDashboard): void {
+  private hapus(koneksi: KoneksiChatbotMonitoring): void {
     const set = this.bySession.get(koneksi.idSession);
     if (set) {
       set.delete(koneksi);
@@ -92,14 +87,14 @@ export class DashboardWsManager implements IWsSessionHandler {
     }
   }
 
-  private async kirimPayload(koneksi: KoneksiDashboard): Promise<void> {
+  private async kirimPayload(koneksi: KoneksiChatbotMonitoring): Promise<void> {
     if (koneksi.ws.readyState !== koneksi.ws.OPEN)
       return;
-    const payload = await this.kontrolDashboard.buatPayloadAdmin(koneksi.filter);
+    const payload = await this.kontrolDashboard.buatPayloadChatbot(koneksi.filter);
     koneksi.ws.send(JSON.stringify(payload));
   }
 
-  private tanganiPesanMasuk(koneksi: KoneksiDashboard, raw: string): void {
+  private tanganiPesanMasuk(koneksi: KoneksiChatbotMonitoring, raw: string): void {
     try {
       const parsed = JSON.parse(raw);
       if (parsed?.filter && typeof parsed.filter.tahun === "number") {
@@ -110,7 +105,7 @@ export class DashboardWsManager implements IWsSessionHandler {
         }
         koneksi.filter = filterBaru;
         this.kirimPayload(koneksi).catch((err) => {
-          console.error(new Date().toISOString(), "[DashboardWsManager] Gagal kirim setelah filter berubah:", err);
+          console.error(new Date().toISOString(), "[ChatbotMonitoringWsManager] Gagal kirim setelah filter berubah:", err);
         });
       }
     }

@@ -6,19 +6,22 @@ export type HistoryItem = {
 export type FilterDashboard = {
   tahun: number;
   bulan?: number; // 1–12, opsional
-  minggu?: number; // 1–5 (minggu ke-N dalam bulan), opsional, hanya jika bulan aktif
 };
 
 /**
- * Payload utama yang di-push ke klien WebSocket setiap kali ada update.
+ * Payload Admin Dashboard.
  * Granularitas history:
- *   - tahun saja        → per bulan  (label: "Jan", "Feb", ...)
- *   - tahun + bulan     → per hari   (label: "1", "2", ..., "31")
- *   - tahun + bulan + minggu → per hari dalam minggu (label: "Sen", "Sel", ..., "Min")
+ *   - tahun saja      → per bulan (label: "Jan", "Feb", ...)
+ *   - tahun + bulan   → per hari  (label: "1", "2", ..., "31")
  */
 export type DashboardPayload = {
   totalTiket: number;
   tiketTerbuka: number;
-  history: HistoryItem[];
+  deflectionRate: number; // persentase 0–100
+  totalSesiChat: number;
+  historyTiket: HistoryItem[];
+  historySesiChat: HistoryItem[];
+  avgAktivitasPerJam: HistoryItem[]; // 24 item, label "00"–"23"
+  mostFrequentIssues: null;
   filter: FilterDashboard;
 };

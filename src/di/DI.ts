@@ -24,6 +24,12 @@ import { KontrolChat } from "~/modules/chat/business/KontrolChat";
 import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
 import { ChatEventBus } from "~/modules/chat/event/ChatEventBus";
+import { ChatbotMonitoringWsManager } from "~/modules/dashboard/business/ChatbotMonitoringWsManager";
+import { DashboardWsManager } from "~/modules/dashboard/business/DashboardWsManager";
+import { KontrolDashboard } from "~/modules/dashboard/business/KontrolDashboard";
+import { RepositoriChatbotMonitoring } from "~/modules/dashboard/data/RepositoriChatbotMonitoring";
+import { RepositoriDashboard } from "~/modules/dashboard/data/RepositoriDashboard";
+import { DashboardSubscriber } from "~/modules/dashboard/event/DashboardSubscriber";
 import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
 import { RepositoriFaq } from "~/modules/faq/data/RepositoriFaq";
 import { KnowledgeBaseWorkerClient } from "~/modules/knowledge_base/business/KnowledgeBaseWorkerClient";
@@ -460,8 +466,66 @@ export class DI {
     return this.notifikasiSubscriber;
   }
 
+  private static repositoriDashboard: RepositoriDashboard | null = null;
+  static provideRepositoriDashboard(): RepositoriDashboard {
+    if (!this.repositoriDashboard) {
+      this.repositoriDashboard = new RepositoriDashboard(this.provideSequelize());
+    }
+    return this.repositoriDashboard;
+  }
+
+  private static repositoriChatbotMonitoring: RepositoriChatbotMonitoring | null = null;
+  static provideRepositoriChatbotMonitoring(): RepositoriChatbotMonitoring {
+    if (!this.repositoriChatbotMonitoring) {
+      this.repositoriChatbotMonitoring = new RepositoriChatbotMonitoring(this.provideSequelize());
+    }
+    return this.repositoriChatbotMonitoring;
+  }
+
+  private static kontrolDashboard: KontrolDashboard | null = null;
+  static provideKontrolDashboard(): KontrolDashboard {
+    if (!this.kontrolDashboard) {
+      this.kontrolDashboard = new KontrolDashboard(
+        this.provideRepositoriDashboard(),
+        this.provideRepositoriChatbotMonitoring(),
+      );
+    }
+    return this.kontrolDashboard;
+  }
+
+  private static dashboardWsManager: DashboardWsManager | null = null;
+  static provideDashboardWsManager(): DashboardWsManager {
+    if (!this.dashboardWsManager) {
+      this.dashboardWsManager = new DashboardWsManager(this.provideKontrolDashboard());
+    }
+    return this.dashboardWsManager;
+  }
+
+  private static chatbotMonitoringWsManager: ChatbotMonitoringWsManager | null = null;
+  static provideChatbotMonitoringWsManager(): ChatbotMonitoringWsManager {
+    if (!this.chatbotMonitoringWsManager) {
+      this.chatbotMonitoringWsManager = new ChatbotMonitoringWsManager(this.provideKontrolDashboard());
+    }
+    return this.chatbotMonitoringWsManager;
+  }
+
+  private static dashboardSubscriber: DashboardSubscriber | null = null;
+  static provideDashboardSubscriber(): DashboardSubscriber {
+    if (!this.dashboardSubscriber) {
+      this.dashboardSubscriber = new DashboardSubscriber(
+        this.provideTiketEventBus(),
+        this.provideChatEventBus(),
+        this.provideDashboardWsManager(),
+        this.provideChatbotMonitoringWsManager(),
+      );
+    }
+    return this.dashboardSubscriber;
+  }
+
   static registerWsHandlers(): void {
     WsSessionRegistry.instance.daftarkan(ChatWsManager.instance);
-    // WsSessionRegistry.instance.daftarkan(DashboardWsManager.instance);
+    WsSessionRegistry.instance.daftarkan(this.provideNotifikasiWsManager());
+    WsSessionRegistry.instance.daftarkan(this.provideDashboardWsManager());
+    WsSessionRegistry.instance.daftarkan(this.provideChatbotMonitoringWsManager());
   }
 }
