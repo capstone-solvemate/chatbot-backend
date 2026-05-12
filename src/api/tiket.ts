@@ -18,6 +18,14 @@ routerTiket.get("/", auth(semuaPeran), (req, res, next) => {
   kontrol.getDaftarTiket(req, res).catch(next);
 });
 
+routerTiket.get(
+  "/ringkasan-status",
+  auth([PeranPengguna.Karyawan]),
+  (req, res, next) => {
+    kontrol.getRingkasanStatusTiket(req, res).catch(next);
+  },
+);
+
 routerTiket.get("/:idChat", auth(semuaPeran), (req, res, next) => {
   kontrol.getTiketById(req, res).catch(next);
 });

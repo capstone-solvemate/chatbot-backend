@@ -234,4 +234,10 @@ export class KontrolTiket {
 
     res.status(201).json({ success: true, data: pesanTiketToDto(pesan) });
   }
+
+  async getRingkasanStatusTiket(req: Request, res: Response): Promise<void> {
+    const sesi = req.sesiPengguna!;
+    const ringkasan = await this.repositoriTiket.getRingkasanStatusByPembuat(sesi.idPengguna!);
+    res.json({ success: true, data: ringkasan });
+  }
 }

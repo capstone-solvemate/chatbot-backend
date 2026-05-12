@@ -1,11 +1,11 @@
 import type { Model, ModelStatic, Sequelize, WhereOptions } from "sequelize";
 
-import { Op } from "sequelize";
+import { col, fn, Op } from "sequelize";
 
 import type { PesanTiket } from "../domain/PesanTiket.js";
-import type { StatusTiket } from "../domain/StatusTiket.js";
 import type { Tiket } from "../domain/Tiket.js";
 
+import { intToStatusTiket, StatusTiket } from "../domain/StatusTiket.js";
 import { modelToPesanTiket, modelToTiket } from "./converters.js";
 
 export type FilterTiket = {
@@ -175,5 +175,32 @@ export class RepositoriTiket {
       dibuat_pada: data.dibuatPada,
     });
     return modelToPesanTiket(model);
+  }
+
+  // Di interface RepositoriTiket (jika ada interface terpisah), tambahkan:
+  async getRingkasanStatusByPembuat(idPembuat: number): Promise<{ open: number; inProgress: number; done: number }> {
+    const rows = await this.modelTiket.findAll({
+      attributes: [
+        "status",
+        [fn("COUNT", col("id")), "jumlah"],
+      ],
+      where: { id_pembuat: idPembuat },
+      group: ["status"],
+      raw: true,
+    }) as unknown as Array<{ status: number; jumlah: string }>;
+
+    const hasil = { open: 0, inProgress: 0, done: 0 };
+    for (const row of rows) {
+      const jumlah = Number(row.jumlah);
+      const status = intToStatusTiket(row.status);
+      if (status === StatusTiket.Open)
+        hasil.open = jumlah;
+      else if (status === StatusTiket.InProgress)
+        hasil.inProgress = jumlah;
+      else if (status === StatusTiket.Done)
+        hasil.done = jumlah;
+    }
+
+    return hasil;
   }
 }

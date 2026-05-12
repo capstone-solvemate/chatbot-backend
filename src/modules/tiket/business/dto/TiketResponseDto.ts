@@ -35,3 +35,9 @@ export type PesanChatResponseDto = {
   dibuatPada: string;
   dariAsisten: boolean;
 };
+
+export type RingkasanStatusTiketResponseDto = {
+  open: number;
+  inProgress: number;
+  done: number;
+};
