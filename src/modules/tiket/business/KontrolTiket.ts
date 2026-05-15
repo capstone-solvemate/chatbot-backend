@@ -3,10 +3,10 @@ import type { Request, Response } from "express";
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
 
-import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
-import type { TiketEventBus } from "../event/TiketEventBus.js";
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
 import type { Lampiran } from "../../upload/domain/Lampiran.js";
+import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
+import type { TiketEventBus } from "../event/TiketEventBus.js";
 import type {
   PesanChatResponseDto,
   PesanTiketResponseDto,
@@ -236,10 +236,11 @@ export class KontrolTiket {
     this.tiketEventBus.emit("status_diubah", {
       idTiket: result.tiket.idChat,
       judulTiket: result.tiket.judul,
-      statusBaru: statusTiketToString(dto.status),
+      statusBaru: dto.status,
       idPengirim: sesi.idPengguna!,
       peranPengirim: sesi.peranPengguna!,
       idPemilikTiket: result.tiket.idPembuat,
+      nomorTiket: result.tiket.id,
     });
 
     res.json({ success: true });

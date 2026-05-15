@@ -3,11 +3,13 @@ import type WebSocket from "ws";
 
 import type { EmailWorkerClient } from "~/modules/notifikasi/email/business/EmailWorkerClient.js";
 import type { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna.js";
+import type { StatusTiket } from "~/modules/tiket/domain/StatusTiket.js";
 import type { EventPesanTiketBaruPayload } from "~/modules/tiket/event/payload/EventPesanTiketBaruPayload.js";
 import type { EventStatusTiketDiubahPayload } from "~/modules/tiket/event/payload/EventStatusTiketDiubahPayload.js";
 import type { EventTiketDibuatPayload } from "~/modules/tiket/event/payload/EventTiketDibuatPayload.js";
 
 import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
+import { statusTiketToStringV2 } from "~/modules/tiket/domain/StatusTiket.js";
 
 import type { RepositoriNotifikasi } from "../data/RepositoriNotifikasi.js";
 import type { GetNotifikasiResponseDto } from "./dto/GetNotifikasiResponseDto.js";
@@ -107,13 +109,14 @@ export class KontrolNotifikasi {
       );
       this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
     }
+    // jika diubah oleh admin oleh admin
     else {
       const karyawan = await this.repositoriPengguna.getPenggunaById(payload.idPemilikTiket);
       if (karyawan) {
         await this.simpanDanKirim(
           new NotifikasiTiket(0n, karyawan.id, judul, deskripsi, new Date(), null, payload.idTiket),
         );
-        this.kirimEmailKeSemuaPenerima([karyawan.email], judul, deskripsi);
+        this.kirimEmailStatusTiketDiubahKeKaryawan(karyawan.email, karyawan.nama, payload.nomorTiket.toString(), payload.judulTiket, payload.statusBaru);
       }
     }
   }
@@ -164,5 +167,27 @@ export class KontrolNotifikasi {
         html: `<p>${deskripsi}</p>`,
       });
     }
+  }
+
+  private kirimEmailStatusTiketDiubahKeKaryawan(emailPenerima: string, namaPenerima: string, nomorTiket: string, judulTiket: string, statusBaru: StatusTiket) {
+    this.emailWorkerClient.kirim({
+      to: emailPenerima,
+      subject: `[HELPSON Update Tiket] Status Tiket Anda #${nomorTiket.padStart(3, "0")} Telah Diperbarui`,
+      html: `<p>Yth. ${namaPenerima},</p>
+            <p>Status untuk tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong> telah diubah oleh tim kami.</p>
+            <p>Judul Tiket: <strong>${judulTiket}</strong></p>
+            <p>Status Baru: <strong>${statusTiketToStringV2(statusBaru)}</strong></p>
+
+            <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
+
+            <div>
+              Salam,<br>
+              <strong>Tim Helpson</strong>
+            </div>
+            
+            <hr>
+            <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>
+            `,
+    });
   }
 }
