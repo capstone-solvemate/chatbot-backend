@@ -177,14 +177,23 @@ export class KontrolOtentikasi {
 
     this.emailWorkerClient.kirim({
       to: dto.email,
-      subject: "Kode OTP Reset Password",
+      subject: "[HELPSON] Kode Verifikasi (OTP) Reset Kata Sandi Anda",
       html: `
-        <p>Halo <strong>${pengguna.nama}</strong>,</p>
-        <p>Kode OTP reset password kamu adalah:</p>
-        <h2 style="letter-spacing: 8px;">${otp}</h2>
-        <p>Kode ini berlaku selama <strong>${this.OTP_EXPIRY_MENIT} menit</strong>.</p>
-        <p>Jika kamu tidak meminta reset password, abaikan email ini.</p>
-      `,
+        <p>Yth. ${pengguna.nama},</p>
+        <p>Kami telah menerima permintaan untuk melakukan pengaturan ulang kata sandi (reset password) pada akun Anda di Helpson.</p>
+        <p>Berikut adalah kode verifikasi (OTP) Anda:</p>
+        <h2>${otp}</h2>
+        <p>Kode ini bersifat rahasia dan hanya berlaku selama <strong>[10 menit]</strong>. Demi keamanan akun Anda, <strong>jangan pernah membagikan kode ini kepada siapa pun</strong>, termasuk kepada pihak internal atau admin Helpson.</p>
+
+        <p>Apabila Anda tidak pernah meminta pengaturan ulang kata sandi ini, mohon abaikan email ini. Akun Anda akan tetap aman.</p>
+
+        <div>
+          Hormat kami, <br>
+          <strong>Tim Helpson</strong>
+        </div>
+
+        <hr>
+        <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>`,
     });
 
     res.sendStatus(204);
