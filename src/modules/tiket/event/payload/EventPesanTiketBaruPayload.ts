@@ -6,4 +6,5 @@ export type EventPesanTiketBaruPayload = {
   idPengirim: number;
   peranPengirim: PeranPengguna;
   idPemilikTiket: number; // karyawan pemilik tiket, selalu ada
+  nomorTiket: bigint;
 };

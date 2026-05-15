@@ -143,7 +143,7 @@ export class KontrolNotifikasi {
         await this.simpanDanKirim(
           new NotifikasiTiket(0n, karyawan.id, judul, deskripsi, new Date(), null, payload.idTiket),
         );
-        this.kirimEmailKeSemuaPenerima([karyawan.email], judul, deskripsi);
+        this.kirimEmailTiketDibalasKeKaryawan(karyawan.email, karyawan.nama, payload.nomorTiket.toString(), payload.judulTiket);
       }
     }
   }
@@ -177,6 +177,27 @@ export class KontrolNotifikasi {
             <p>Status untuk tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong> telah diubah oleh tim kami.</p>
             <p><strong>Judul Tiket:</strong> ${judulTiket}</p>
             <p><strong>Status Baru:</strong> ${statusTiketToStringV2(statusBaru)}</p>
+
+            <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
+
+            <div>
+              Salam,<br>
+              <strong>Tim Helpson</strong>
+            </div>
+            
+            <hr>
+            <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>
+            `,
+    });
+  }
+
+  private kirimEmailTiketDibalasKeKaryawan(emailPenerima: string, namaPenerima: string, nomorTiket: string, judulTiket: string) {
+    this.emailWorkerClient.kirim({
+      to: emailPenerima,
+      subject: `[HELPSON Update Tiket] Balasan Baru untuk Tiket Anda #${nomorTiket.padStart(3, "0")}`,
+      html: `<p>Yth. ${namaPenerima},</p>
+            <p>Tim kami telah memberikan balasan atau tanggapan baru pada tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong>.</p>
+            <p><strong>Judul Tiket:</strong> ${judulTiket}</p>
 
             <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
 
