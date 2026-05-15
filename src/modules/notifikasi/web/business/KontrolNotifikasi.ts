@@ -175,8 +175,8 @@ export class KontrolNotifikasi {
       subject: `[HELPSON Update Tiket] Status Tiket Anda #${nomorTiket.padStart(3, "0")} Telah Diperbarui`,
       html: `<p>Yth. ${namaPenerima},</p>
             <p>Status untuk tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong> telah diubah oleh tim kami.</p>
-            <p>Judul Tiket: <strong>${judulTiket}</strong></p>
-            <p>Status Baru: <strong>${statusTiketToStringV2(statusBaru)}</strong></p>
+            <p><strong>Judul Tiket:</strong> ${judulTiket}</p>
+            <p><strong>Status Baru:</strong> ${statusTiketToStringV2(statusBaru)}</p>
 
             <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
 
