@@ -4,7 +4,7 @@ import { QueryTypes } from "sequelize";
 
 import { StatusTiket } from "~/modules/tiket/domain/StatusTiket.js";
 
-import type { FilterDashboard, HistoryItem } from "../domain/DashboardPayload.js";
+import type { FilterDashboard, HistoryItem, IssueCategory } from "../domain/DashboardPayload.js";
 
 const NAMA_BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -158,6 +158,24 @@ export class RepositoriDashboard {
         jumlah: (tiket ? Number(tiket.jumlah) : 0) + (chat ? Number(chat.jumlah) : 0),
       };
     });
+  }
+
+  async getMostFrequentIssueCategories(filter: FilterDashboard): Promise<IssueCategory[]> {
+    const { where, replacements } = this.buildTiketWhere(filter);
+    const rows = await this.sequelize.query<{ id_kategori: number; nama: string; jumlah: string }>(
+      `SELECT t.id_kategori, k.nama, COUNT(*) AS jumlah
+       FROM tiket t
+       JOIN kategori k ON k.id = t.id_kategori
+       ${where}
+       GROUP BY t.id_kategori, k.nama
+       ORDER BY jumlah DESC`,
+      { type: QueryTypes.SELECT, replacements },
+    );
+    return rows.map(r => ({
+      idKategori: r.id_kategori,
+      namaKategori: r.nama,
+      jumlah: Number(r.jumlah),
+    }));
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
