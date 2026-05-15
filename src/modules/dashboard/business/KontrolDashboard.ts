@@ -18,6 +18,7 @@ export class KontrolDashboard {
       historyTiket,
       historySesiChat,
       avgAktivitasPerJam,
+      mostFrequentIssueCategories,
     ] = await Promise.all([
       this.repositoriDashboard.getTotalTiket(filter),
       this.repositoriDashboard.getTiketTerbuka(filter),
@@ -26,6 +27,7 @@ export class KontrolDashboard {
       this.repositoriDashboard.getHistoryTiket(filter),
       this.repositoriDashboard.getHistorySesiChat(filter),
       this.repositoriDashboard.getAvgAktivitasPerJam(filter),
+      this.repositoriDashboard.getMostFrequentIssueCategories(filter),
     ]);
 
     return {
@@ -36,7 +38,7 @@ export class KontrolDashboard {
       historyTiket,
       historySesiChat,
       avgAktivitasPerJam,
-      mostFrequentIssues: null,
+      mostFrequentIssueCategories,
       filter,
     };
   }

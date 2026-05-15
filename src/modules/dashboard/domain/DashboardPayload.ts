@@ -8,6 +8,12 @@ export type FilterDashboard = {
   bulan?: number; // 1–12, opsional
 };
 
+export type IssueCategory = {
+  idKategori: number;
+  namaKategori: string;
+  jumlah: number;
+};
+
 /**
  * Payload Admin Dashboard.
  * Granularitas history:
@@ -22,6 +28,6 @@ export type DashboardPayload = {
   historyTiket: HistoryItem[];
   historySesiChat: HistoryItem[];
   avgAktivitasPerJam: HistoryItem[]; // 24 item, label "00"–"23"
-  mostFrequentIssues: null;
+  mostFrequentIssueCategories: IssueCategory[];
   filter: FilterDashboard;
 };
