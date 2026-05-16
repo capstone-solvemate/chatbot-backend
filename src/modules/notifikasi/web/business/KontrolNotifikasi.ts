@@ -90,7 +90,7 @@ export class KontrolNotifikasi {
         new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
       )),
     );
-    this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
+    this.kirimEmailTiketDibuatKeAdmin(daftarAdmin.map(a => a.email), payload.nomorTiket.toString(), payload.judul, namaPembuat);
   }
 
   async tanganiStatusDiubah(payload: EventStatusTiketDiubahPayload): Promise<void> {
@@ -210,5 +210,32 @@ export class KontrolNotifikasi {
             <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>
             `,
     });
+  }
+
+  private kirimEmailTiketDibuatKeAdmin(daftarEmailPenerima: string[], nomorTiket: string, judulTiket: string, namaPembuatTiket: string) {
+    for (const emailPenerima of daftarEmailPenerima) {
+      this.emailWorkerClient.kirim({
+        to: emailPenerima,
+        subject: `[Tiket Baru] #${nomorTiket.padStart(3, "0")} - ${judulTiket}`,
+        html: `<p>Halo Tim Admin,</p>
+            <p>Terdapat satu tiket baru yang masuk dan membutuhkan penanganan. Berikut adalah detail tiket tersebut:</p>
+            <ul>
+              <li><strong>Nomor Tiket:</strong> #${nomorTiket.padStart(3, "0")}</li>
+              <li><strong>Nama Pengguna:</strong> ${namaPembuatTiket}</li>
+              <li><strong>Judul Tiket:</strong> ${judulTiket}</li>
+            </ul>
+
+            <p>Anda dapat melihat detail lebih lanjut dan merespons tiket ini pada Website Helpson.</p>
+
+            <div>
+              Salam,<br>
+              <strong>Sistem Helpson</strong>
+            </div>
+            
+            <hr>
+            <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>
+            `,
+      });
+    }
   }
 }

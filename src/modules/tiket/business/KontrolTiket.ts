@@ -90,6 +90,7 @@ export class KontrolTiket {
       idTiket: tiket.idChat,
       idPengguna: sesi.idPengguna!,
       judul: tiket.judul,
+      nomorTiket: tiket.id,
     });
 
     res.status(201).json({ success: true, data: tiketToDto({ tiket, namaPembuat: "" }) });
