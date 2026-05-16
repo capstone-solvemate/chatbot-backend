@@ -123,6 +123,7 @@ export class KontrolNotifikasi {
 
   async tanganiPesanBaru(payload: EventPesanTiketBaruPayload): Promise<void> {
     const pengirim = await this.repositoriPengguna.getPenggunaById(payload.idPengirim);
+    const pembuatTiket = await this.repositoriPengguna.getPenggunaById(payload.idPemilikTiket);
     const namaPengirim = pengirim?.nama ?? "Seseorang";
 
     const judul = "Pesan baru di tiket";
@@ -135,7 +136,10 @@ export class KontrolNotifikasi {
           new NotifikasiTiket(0n, admin.id, judul, deskripsi, new Date(), null, payload.idTiket),
         )),
       );
-      this.kirimEmailKeSemuaPenerima(daftarAdmin.map(a => a.email), judul, deskripsi);
+
+      const namaPembuatTiket = pembuatTiket?.nama ?? "Karyawan";
+
+      this.kirimEmailTiketDibalasKeAdmin(daftarAdmin.map(a => a.email), payload.nomorTiket.toString(), payload.judulTiket, namaPembuatTiket, payload.statusTerakhir);
     }
     else {
       const karyawan = await this.repositoriPengguna.getPenggunaById(payload.idPemilikTiket);
@@ -226,6 +230,34 @@ export class KontrolNotifikasi {
             </ul>
 
             <p>Anda dapat melihat detail lebih lanjut dan merespons tiket ini pada Website Helpson.</p>
+
+            <div>
+              Salam,<br>
+              <strong>Sistem Helpson</strong>
+            </div>
+            
+            <hr>
+            <p><em>Email ini dibuat otomatis oleh sistem. Mohon untuk tidak membalas email ini.</em></p>
+            `,
+      });
+    }
+  }
+
+  private kirimEmailTiketDibalasKeAdmin(daftarEmailPenerima: string[], nomorTiket: string, judulTiket: string, namaPembuatTiket: string, statusTerakhir: StatusTiket) {
+    for (const emailPenerima of daftarEmailPenerima) {
+      this.emailWorkerClient.kirim({
+        to: emailPenerima,
+        subject: `[Balasan Tiket] Respon Pengguna untuk Tiket #${nomorTiket.padStart(3, "0")}`,
+        html: `<p>Halo Tim Admin,</p>
+            <p>Pengguna telah memberikan balasan terbaru pada tiket berikut:</p>
+            <ul>
+              <li><strong>Nomor Tiket:</strong> #${nomorTiket.padStart(3, "0")}</li>
+              <li><strong>Nama Pengguna:</strong> ${namaPembuatTiket}</li>
+              <li><strong>Judul Tiket:</strong> ${judulTiket}</li>
+              <li><strong>Status Terakhir:</strong> ${statusTiketToStringV2(statusTerakhir)}</li>
+            </ul>
+            
+            <p>Anda dapat meninjau balasan pengguna dan menindaklanjuti tiket ini pada Website Helpson.</p>
 
             <div>
               Salam,<br>

@@ -284,6 +284,7 @@ export class KontrolTiket {
       peranPengirim: sesi.peranPengguna!,
       idPemilikTiket: result.tiket.idPembuat,
       nomorTiket: result.tiket.id,
+      statusTerakhir: result.tiket.status,
     });
 
     res.status(201).json({
