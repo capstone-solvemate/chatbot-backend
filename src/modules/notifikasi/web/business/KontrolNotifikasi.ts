@@ -179,8 +179,10 @@ export class KontrolNotifikasi {
       subject: `[HELPSON Update Tiket] Status Tiket Anda #${nomorTiket.padStart(3, "0")} Telah Diperbarui`,
       html: `<p>Yth. ${namaPenerima},</p>
             <p>Status untuk tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong> telah diubah oleh tim kami.</p>
-            <p><strong>Judul Tiket:</strong> ${judulTiket}</p>
-            <p><strong>Status Baru:</strong> ${statusTiketToStringV2(statusBaru)}</p>
+            <ul>
+              <li><strong>Judul Tiket:</strong> ${judulTiket}</li>
+              <li><strong>Status Baru:</strong> ${statusTiketToStringV2(statusBaru)}</li>
+            </ul>
 
             <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
 
@@ -201,7 +203,9 @@ export class KontrolNotifikasi {
       subject: `[HELPSON Update Tiket] Balasan Baru untuk Tiket Anda #${nomorTiket.padStart(3, "0")}`,
       html: `<p>Yth. ${namaPenerima},</p>
             <p>Tim kami telah memberikan balasan atau tanggapan baru pada tiket Anda dengan nomor referensi <strong>#${nomorTiket.padStart(3, "0")}</strong>.</p>
-            <p><strong>Judul Tiket:</strong> ${judulTiket}</p>
+            <ul>
+              <li><strong>Judul Tiket:</strong> ${judulTiket}</li>
+            </ul>
 
             <p>Anda dapat melihat detail lebih lanjut pada Website Helpson</p>
 
