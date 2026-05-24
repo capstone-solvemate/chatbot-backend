@@ -6,12 +6,10 @@ import { ValidationError } from "~/core/types/ValidationError.js";
 
 const PertanyaanSchema = z.object({
   pesan: z.string().min(1, "Pesan tidak boleh kosong"),
-  lampiranIds: z.array(z.string()).optional().default([]),
 });
 
 const BalasChatSchema = z.object({
   pesan: z.string().min(1, "Pesan tidak boleh kosong"),
-  lampiranIds: z.array(z.string()).optional().default([]),
 });
 
 // --- DTO types ---

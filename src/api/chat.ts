@@ -3,6 +3,8 @@ import type WebSocket from "ws";
 
 import express from "express";
 
+import { multerUpload } from "../config/multerConfig.js";
+
 import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 
 import { DI } from "../di/DI.js";
@@ -35,7 +37,7 @@ const repositoriSession = DI.provideRepositoriSession();
  *       200:
  *         description: Sesi chat berhasil dibuat, pertanyaan masuk antrian RAG
  */
-routerChat.post("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
+routerChat.post("/", auth([PeranPengguna.Karyawan]), multerUpload.array("files", 5), (req, res, next) => {
   kontrolChat.submitPertanyaan(req, res).catch(next);
 });
 
@@ -72,7 +74,7 @@ routerChat.post("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
  *       409:
  *         description: Chat sedang diproses atau sudah dialihkan ke tiket
  */
-routerChat.post("/:idChat", auth([PeranPengguna.Karyawan]), (req, res, next) => {
+routerChat.post("/:idChat", auth([PeranPengguna.Karyawan]), multerUpload.array("files", 5), (req, res, next) => {
   kontrolChat.balasChat(req, res).catch(next);
 });
 

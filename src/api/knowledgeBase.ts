@@ -4,6 +4,9 @@ import path from "node:path";
 
 import { DI } from "~/di/DI.js";
 
+import { auth } from "../middlewares.js";
+import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
+
 const router = express.Router();
 const kontrol = DI.provideKontrolKnowledgeBase();
 
@@ -98,7 +101,7 @@ const upload = multer({
  *                   type: string
  *                   example: Gagal mengambil daftar dokumen
  */
-router.get("/", (req, res, next) => kontrol.getSemuaDokumen(req, res).catch(next));
+router.get("/", auth([PeranPengguna.Admin]), (req, res, next) => kontrol.getSemuaDokumen(req, res).catch(next));
 
 /**
  * @swagger
@@ -161,7 +164,7 @@ router.get("/", (req, res, next) => kontrol.getSemuaDokumen(req, res).catch(next
  *                   type: string
  *                   example: Gagal menyimpan dokumen
  */
-router.post("/upload", upload.single("file"), (req, res, next) => kontrol.uploadDokumen(req, res).catch(next));
+router.post("/upload", auth([PeranPengguna.Admin]), upload.single("file"), (req, res, next) => kontrol.uploadDokumen(req, res).catch(next));
 
 /**
  * @swagger
@@ -217,6 +220,6 @@ router.post("/upload", upload.single("file"), (req, res, next) => kontrol.upload
  *                   type: string
  *                   example: Terjadi kesalahan saat menghapus dokumen
  */
-router.delete("/:id", (req, res, next) => kontrol.hapusDokumen(req, res).catch(next));
+router.delete("/:id", auth([PeranPengguna.Admin]), (req, res, next) => kontrol.hapusDokumen(req, res).catch(next));
 
 export const routerKnowledgeBase = router;

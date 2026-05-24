@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { DI } from "~/di/DI.js";
 
+import { multerUpload } from "../config/multerConfig.js";
 import { auth } from "../middlewares.js";
 import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 
@@ -34,7 +35,7 @@ routerTiket.patch("/:idChat/status", auth(semuaPeran), (req, res, next) => {
   kontrol.updateStatusTiket(req, res).catch(next);
 });
 
-routerTiket.post("/:idChat/pesan", auth(semuaPeran), (req, res, next) => {
+routerTiket.post("/:idChat/pesan", auth(semuaPeran), multerUpload.array("files", 5), (req, res, next) => {
   kontrol.buatPesanTiket(req, res).catch(next);
 });
 

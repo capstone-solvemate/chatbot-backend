@@ -18,7 +18,6 @@ const buatTiketSchema = yup.object({
 
 const buatPesanTiketSchema = yup.object({
   pesan: yup.string().required().min(1),
-  lampiranIds: yup.array().of(yup.string().required()).optional().default([]),
 });
 
 const updateStatusTiketSchema = yup.object({
@@ -50,7 +49,7 @@ export function validasiBuatPesanTiket(req: Request): BuatPesanTiketDto {
     }
     throw e;
   }
-  return new BuatPesanTiketDto(body.pesan, body.lampiranIds ?? []);
+  return new BuatPesanTiketDto(body.pesan);
 }
 
 export function validasiUpdateStatusTiket(req: Request): UpdateStatusTiketDto {

@@ -7,9 +7,43 @@ import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { ChatWsManager } from "./ChatWsManager.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
-import type { Lampiran } from "../../upload/domain/Lampiran.js";
+import type { JenisPesan } from "../../upload/domain/Lampiran.js";
+import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
+
+/**
+ * Menyimpan file-file dari req.files ke DB, langsung diasosiasikan ke idPesan.
+ * Mengembalikan daftar lampiran DTO yang sudah tersimpan.
+ */
+async function simpanFileDariRequest(
+  req: Request,
+  idPengunggah: number,
+  idPesan: bigint,
+  jenisPesan: JenisPesan,
+  repositoriLampiran: RepositoriLampiran,
+) {
+  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+  if (files.length === 0) return [];
+
+  const hasilSimpan = await Promise.all(
+    files.map(file =>
+      repositoriLampiran.simpan({
+        jenisPesan,
+        idPesan,
+        idPengunggah,
+        namaAsli: file.originalname,
+        namaBerkas: file.filename,
+        path: file.path.replace(/\\/g, "/"),
+        ukuran: file.size,
+        mimeType: file.mimetype,
+        dibuatPada: new Date(),
+      }),
+    ),
+  );
+
+  return hasilSimpan.map(lampiranToDto);
+}
 
 export class KontrolChat {
   constructor(
@@ -54,15 +88,10 @@ export class KontrolChat {
 
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
-    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
-    if (dto.lampiranIds.length > 0) {
-      const ids = dto.lampiranIds.map(id => BigInt(id));
-      await this.repositoriLampiran.asosiasikanKePesan(ids, pesanKaryawan.id, "chat");
-    }
-
-    const lampiran = dto.lampiranIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesan("chat", pesanKaryawan.id)
-      : [];
+    // Simpan lampiran langsung dari form-data (jika ada)
+    const lampiran = await simpanFileDariRequest(
+      req, idPembuat, pesanKaryawan.id, "chat", this.repositoriLampiran,
+    );
 
     this.chatEventBus.emit("chat_dibuat", {
       idChat: chatBaru.id,
@@ -81,11 +110,7 @@ export class KontrolChat {
         id: pesanKaryawan.id.toString(),
         pesan: pesanKaryawan.pesan,
         tanggalDibuat: pesanKaryawan.tanggalDibuat,
-        lampiran: lampiran.map(l => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran,
       },
     });
   }
@@ -114,15 +139,10 @@ export class KontrolChat {
     const historiPesan = await this.repositoriChat.getHistoriPesan(idChat);
     const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
 
-    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
-    if (dto.lampiranIds.length > 0) {
-      const ids = dto.lampiranIds.map(id => BigInt(id));
-      await this.repositoriLampiran.asosiasikanKePesan(ids, pesanKaryawan.id, "chat");
-    }
-
-    const lampiran = dto.lampiranIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesan("chat", pesanKaryawan.id)
-      : [];
+    // Simpan lampiran langsung dari form-data (jika ada)
+    const lampiran = await simpanFileDariRequest(
+      req, idPembuat, pesanKaryawan.id, "chat", this.repositoriLampiran,
+    );
 
     this.chatEventBus.emit("pesan_baru", {
       idChat,
@@ -146,11 +166,7 @@ export class KontrolChat {
         id: pesanKaryawan.id.toString(),
         pesan: pesanKaryawan.pesan,
         tanggalDibuat: pesanKaryawan.tanggalDibuat,
-        lampiran: lampiran.map(l => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran,
       },
     });
   }
@@ -198,11 +214,7 @@ export class KontrolChat {
         chatAsisten: p.chatAsisten,
         tanggalDibuat: p.tanggalDibuat,
         gagal: p.gagal,
-        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     });
   }

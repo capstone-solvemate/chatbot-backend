@@ -52,7 +52,6 @@ import { KontrolTiket } from "~/modules/tiket/business/KontrolTiket";
 import { RepositoriTiket } from "~/modules/tiket/data/RepositoriTiket";
 import { TiketEventBus } from "~/modules/tiket/event/TiketEventBus";
 import { RepositoriLampiran } from "~/modules/upload/data/RepositoriLampiran";
-import { KontrolUpload } from "~/modules/upload/business/KontrolUpload";
 
 export class DI {
   private static config: Config | null = null;
@@ -87,13 +86,6 @@ export class DI {
     return this.modelPesanChat;
   }
 
-  // private static modelPesanChat: ReturnType<typeof createModelPesanChat> | null = null;
-  // static provideModelPesanChat(): ReturnType<typeof createModelPesanChat> {
-  //   if (!this.modelPesanChat) {
-  //     this.modelPesanChat = createModelPesanChat(this.provideSequelize());
-  //   }
-  //   return this.modelPesanChat;
-  // }
 
   private static repositoriChat: RepositoriChat | null = null;
   static provideRepositoriChat(): RepositoriChat {
@@ -547,15 +539,7 @@ export class DI {
     return this.repositoriLampiran;
   }
 
-  private static kontrolUpload: KontrolUpload | null = null;
-  static provideKontrolUpload(): KontrolUpload {
-    if (!this.kontrolUpload) {
-      this.kontrolUpload = new KontrolUpload(
-        this.provideRepositoriLampiran(),
-      );
-    }
-    return this.kontrolUpload;
-  }
+
 
   static registerWsHandlers(): void {
     WsSessionRegistry.instance.daftarkan(ChatWsManager.instance);

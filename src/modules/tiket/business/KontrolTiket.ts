@@ -4,7 +4,7 @@ import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
 
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
-import type { Lampiran } from "../../upload/domain/Lampiran.js";
+import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
 import type { TiketEventBus } from "../event/TiketEventBus.js";
 import type {
@@ -145,11 +145,7 @@ export class KontrolTiket {
       ...tiketToDto(result),
       pesanTiket: pesans.map(p => ({
         ...pesanTiketToDto(p),
-        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     };
 
@@ -188,11 +184,7 @@ export class KontrolTiket {
       emailPembuat: result.emailPembuat,
       pesanTiket: pesans.map(p => ({
         ...pesanTiketToDto(p),
-        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
       historiChat: historiChat.map((p): PesanChatResponseDto & { lampiran: any[] } => ({
         id: p.id.toString(),
@@ -200,11 +192,7 @@ export class KontrolTiket {
         pesan: p.pesan,
         dibuatPada: p.tanggalDibuat.toISOString(),
         dariAsisten: p.chatAsisten,
-        lampiran: (lampiranChatMap.get(p.id.toString()) ?? []).map((l: Lampiran) => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran: (lampiranChatMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     };
 
@@ -267,14 +255,24 @@ export class KontrolTiket {
       new PesanTiket(0n, result.tiket.id, sesi.idPengguna!, dto.pesan, new Date()),
     );
 
-    // Asosiasikan lampiran (jika ada) ke pesan yang baru dibuat
-    if (dto.lampiranIds.length > 0) {
-      const ids = dto.lampiranIds.map(id => BigInt(id));
-      await this.repositoriLampiran.asosiasikanKePesan(ids, pesan.id, "tiket");
-    }
-
-    const lampiran = dto.lampiranIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesan("tiket", pesan.id)
+    // Simpan lampiran langsung dari form-data (jika ada)
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    const lampiran = files.length > 0
+      ? await Promise.all(
+          files.map(file =>
+            this.repositoriLampiran.simpan({
+              jenisPesan: "tiket" as const,
+              idPesan: pesan.id,
+              idPengunggah: sesi.idPengguna!,
+              namaAsli: file.originalname,
+              namaBerkas: file.filename,
+              path: file.path.replace(/\\/g, "/"),
+              ukuran: file.size,
+              mimeType: file.mimetype,
+              dibuatPada: new Date(),
+            }),
+          ),
+        )
       : [];
 
     this.tiketEventBus.emit("pesan_baru", {
@@ -291,11 +289,7 @@ export class KontrolTiket {
       success: true,
       data: {
         ...pesanTiketToDto(pesan),
-        lampiran: lampiran.map(l => ({
-          id: l.id.toString(),
-          url: l.url,
-          namaAsli: l.namaAsli,
-        })),
+        lampiran: lampiran.map(lampiranToDto),
       },
     });
   }

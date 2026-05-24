@@ -21,10 +21,12 @@ export function session(req: Request, res: Response, next: NextFunction) {
       const cookies = req.cookies;
       if (!cookies.session) {
         await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
+        return;
       }
       const session = await repositoriSesison.getById(cookies.session);
       if (!session) {
         await kontrolOtentikasi.tanganiSessionTidakValid(req, res);
+        return;
       }
       req.sesiPengguna = {
         sessionId: session!.id,
@@ -52,10 +54,12 @@ export function csrfGuard(req: Request, res: Response, next: NextFunction) {
     const csrfToken = req.headers["x-csrf-token"];
     if (!csrfToken) {
       kontrolOtentikasi.tanganiCsrfTidakValid(req, res);
+      return;
     }
 
     if (csrfToken !== req.sesiPengguna!.csrfToken) {
       kontrolOtentikasi.tanganiCsrfTidakValid(req, res);
+      return;
     }
 
     next();

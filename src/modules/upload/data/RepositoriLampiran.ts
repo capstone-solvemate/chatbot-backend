@@ -51,6 +51,11 @@ export class RepositoriLampiran {
     return row ? this.rowKeLampiran(row) : null;
   }
 
+  async getByNamaBerkas(namaBerkas: string): Promise<Lampiran | null> {
+    const row = await this.modelLampiran.findOne({ where: { nama_berkas: namaBerkas } });
+    return row ? this.rowKeLampiran(row) : null;
+  }
+
   async getByIdPesan(jenisPesan: JenisPesan, idPesan: bigint): Promise<Lampiran[]> {
     const rows = await this.modelLampiran.findAll({
       where: {
@@ -88,27 +93,6 @@ export class RepositoriLampiran {
       map.set(key, existing);
     }
     return map;
-  }
-
-  /**
-   * Mengasosiasikan lampiran yang sudah di-upload (id_pesan = NULL)
-   * dengan sebuah pesan yang baru dibuat.
-   */
-  async asosiasikanKePesan(lampiranIds: bigint[], idPesan: bigint, jenisPesan: JenisPesan): Promise<void> {
-    if (lampiranIds.length === 0) return;
-
-    await this.modelLampiran.update(
-      {
-        id_pesan: idPesan.toString(),
-        jenis_pesan: jenisPesan,
-      },
-      {
-        where: {
-          id: { [Op.in]: lampiranIds.map(id => id.toString()) },
-          id_pesan: null, // hanya update yang belum diasosiasikan
-        },
-      },
-    );
   }
 
   async hapus(id: bigint): Promise<boolean> {
