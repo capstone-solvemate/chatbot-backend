@@ -2,6 +2,8 @@ import type { Model, ModelStatic } from "sequelize";
 
 import { Op } from "sequelize";
 
+import { TestGuard } from "~/core/test/TestGuard.js";
+
 import { Chat } from "../domain/Chat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 
@@ -36,6 +38,22 @@ export class RepositoriChat {
       p.getDataValue("chat_asisten"),
       p.getDataValue("gagal"),
     );
+  }
+
+  private chatKeRow(chat: Chat): Record<string, any> {
+    return {
+      id: chat.id,
+      id_pembuat: chat.idPembuat,
+      tanggal_dibuat: chat.tanggalDibuat,
+      subjek: chat.subjek,
+      sedang_diproses: chat.sedangDiproses,
+      dialihkan_ke_tiket: chat.dialihkanKeTiket,
+    };
+  }
+
+  testChatKeRow(chat: Chat): Record<string, any> {
+    TestGuard.ensureInTestMode();
+    return this.chatKeRow(chat);
   }
 
   // --- Chat ---

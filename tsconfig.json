@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "rootDir": "./src",
     "module": "commonjs",
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/*"],
+      "~test/*": ["./test/*"]
     },
     "typeRoots": ["./node_modules/@types", "./types"],
     "strict": true,
