@@ -4,12 +4,12 @@ import type WebSocket from "ws";
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
 import type { JenisPesan } from "../../upload/domain/Lampiran.js";
 import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
-import type { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 
 import { lampiranToDto } from "../../upload/domain/Lampiran.js";
+import { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import { Chat } from "../domain/Chat.js";
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
 import { PesanChat } from "../domain/PesanChat.js";
@@ -140,42 +140,42 @@ export class KontrolChat {
     }
 
     const historiPesan = await this.repositoriChat.getHistoriPesan(idChat);
-    const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
+    // const pesanKaryawan = await this.repositoriChat.buatPesanChat(idChat, dto.pesan, false);
 
     // Simpan lampiran langsung dari form-data (jika ada)
-    const lampiran = await simpanFileDariRequest(
-      req,
-      idPembuat,
-      pesanKaryawan.id,
-      "chat",
-      this.repositoriLampiran,
-    );
+    // const lampiran = await simpanFileDariRequest(
+    //   req,
+    //   idPembuat,
+    //   pesanKaryawan.id,
+    //   "chat",
+    //   this.repositoriLampiran,
+    // );
 
-    this.chatEventBus.emit("pesan_baru", {
-      idChat,
-      idPembuat,
-      tanggalDibuat: pesanKaryawan.tanggalDibuat,
-    });
+    // this.chatEventBus.emit("pesan_baru", {
+    //   idChat,
+    //   idPembuat,
+    //   tanggalDibuat: pesanKaryawan.tanggalDibuat,
+    // });
 
-    const history = [
-      ...historiPesan.map(p => ({
-        role: p.chatAsisten ? "assistant" as const : "user" as const,
-        content: p.pesan,
-      })),
-      { role: "user" as const, content: dto.pesan },
-    ];
+    // const history = [
+    //   ...historiPesan.map(p => ({
+    //     role: p.chatAsisten ? "assistant" as const : "user" as const,
+    //     content: p.pesan,
+    //   })),
+    //   { role: "user" as const, content: dto.pesan },
+    // ];
 
-    this.ragWorkerClient.tambahTugas(idChat, history);
+    // this.ragWorkerClient.tambahTugas(idChat, history);
 
-    res.status(200).json({
-      idChat: idChat.toString(),
-      pesan: {
-        id: pesanKaryawan.id.toString(),
-        pesan: pesanKaryawan.pesan,
-        tanggalDibuat: pesanKaryawan.tanggalDibuat,
-        lampiran,
-      },
-    });
+    // res.status(200).json({
+    //   idChat: idChat.toString(),
+    //   pesan: {
+    //     id: pesanKaryawan.id.toString(),
+    //     pesan: pesanKaryawan.pesan,
+    //     tanggalDibuat: pesanKaryawan.tanggalDibuat,
+    //     lampiran,
+    //   },
+    // });
   }
 
   async getRiwayatChat(req: Request, res: Response): Promise<void> {
@@ -238,7 +238,7 @@ export class KontrolChat {
       return;
     }
 
-    const koneksi: KoneksiWsChat = { ws, idChat, idSession };
+    const koneksi = new KoneksiWsChat(ws, idChat, idSession);
     this.chatWsManager.tambah(koneksi);
 
     ws.on("close", () => {

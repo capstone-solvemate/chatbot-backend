@@ -15,6 +15,7 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "**/test/real/**",
+      "**/build/**",
     ],
     reporters: "tree",
   },

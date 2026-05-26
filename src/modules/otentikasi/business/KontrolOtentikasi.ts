@@ -284,4 +284,8 @@ export class KontrolOtentikasi {
 
     res.sendStatus(204);
   }
+
+  async getSession(idSession: string): Promise<Session | null> {
+    return await this.repositoriSession.getById(idSession);
+  }
 }

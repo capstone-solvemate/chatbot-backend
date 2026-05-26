@@ -1,6 +1,6 @@
 import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
 
-import type { KoneksiChat } from "../api/ws/KoneksiWsChat.js";
+import type { KoneksiWsChat } from "./KoneksiWsChat.js";
 
 /**
  * ChatWsManager — mengelola koneksi WebSocket aktif dengan dual-index:
@@ -11,16 +11,16 @@ export class ChatWsManager implements IWsSessionHandler {
   private constructor() {}
   static readonly instance = new ChatWsManager();
 
-  private readonly koneksiChatBaru = new Map<string, Set<KoneksiChat>>();
-  private readonly koneksiByChat = new Map<bigint, Set<KoneksiChat>>();
-  private readonly koneksiBySession = new Map<string, Set<KoneksiChat>>();
+  private readonly koneksiChatBaru = new Map<string, Set<KoneksiWsChat>>();
+  private readonly koneksiByChat = new Map<bigint, Set<KoneksiWsChat>>();
+  private readonly koneksiBySession = new Map<string, Set<KoneksiWsChat>>();
 
-  tambah(koneksi: KoneksiChat): void {
+  tambah(koneksi: KoneksiWsChat): void {
     // Index by idChat
-    if (!this.koneksiByChat.has(koneksi.idChat)) {
-      this.koneksiByChat.set(koneksi.idChat, new Set());
+    if (!this.koneksiByChat.has(koneksi.idChat!)) {
+      this.koneksiByChat.set(koneksi.idChat!, new Set());
     }
-    this.koneksiByChat.get(koneksi.idChat)!.add(koneksi);
+    this.koneksiByChat.get(koneksi.idChat!)!.add(koneksi);
 
     // Index by idSession
     if (!this.koneksiBySession.has(koneksi.idSession)) {
@@ -29,13 +29,13 @@ export class ChatWsManager implements IWsSessionHandler {
     this.koneksiBySession.get(koneksi.idSession)!.add(koneksi);
   }
 
-  hapus(koneksi: KoneksiChat): void {
+  hapus(koneksi: KoneksiWsChat): void {
     // Hapus dari index idChat
-    const setChat = this.koneksiByChat.get(koneksi.idChat);
+    const setChat = this.koneksiByChat.get(koneksi.idChat!);
     if (setChat) {
       setChat.delete(koneksi);
       if (setChat.size === 0) {
-        this.koneksiByChat.delete(koneksi.idChat);
+        this.koneksiByChat.delete(koneksi.idChat!);
       }
     }
 
@@ -78,11 +78,11 @@ export class ChatWsManager implements IWsSessionHandler {
         koneksi.ws.close();
       }
       // Hapus dari index idChat
-      const setChat = this.koneksiByChat.get(koneksi.idChat);
+      const setChat = this.koneksiByChat.get(koneksi.idChat!);
       if (setChat) {
         setChat.delete(koneksi);
         if (setChat.size === 0) {
-          this.koneksiByChat.delete(koneksi.idChat);
+          this.koneksiByChat.delete(koneksi.idChat!);
         }
       }
     }

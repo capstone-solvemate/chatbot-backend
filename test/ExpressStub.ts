@@ -1,5 +1,6 @@
-import type { Request, Response } from "express";
+import type { Express, Request, Response } from "express";
 
+import express from "express";
 import * as uuid from "uuid";
 import { vi } from "vitest";
 
@@ -33,4 +34,10 @@ export function mockExpressResponse() {
     send: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
   }) as unknown as Response;
+}
+
+export function buatAppExpress(): Express {
+  const app = express();
+  app.use(express.json());
+  return app;
 }

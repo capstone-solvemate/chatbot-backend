@@ -6,14 +6,14 @@ import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 import { mockRepositoriLampiran } from "~/modules/upload/data/RepositoriLampiranStub.js";
 import { mockExpressRequest, mockExpressResponse } from "~test/ExpressStub.js";
 
+import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
-import type { ChatWsManager } from "./ChatWsManager.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 
+import { mockChatWsManager } from "../api/ws/ChatWsManagerStub.js";
 import { mockRepositoriChat } from "../data/RepositoriChatStub.js";
 import { mockChatEventBus } from "../event/ChatEventBusStub.js";
-import { mockChatWsManager } from "./ChatWsManagerStub.js";
 import { KontrolChat } from "./KontrolChat.js";
 import { mockRagWorkerClient } from "./RagWorkerClientStub.js";
 

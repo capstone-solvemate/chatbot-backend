@@ -1,0 +1,150 @@
+import type { Buffer } from "node:buffer";
+import type { IncomingMessage, Server } from "node:http";
+import type { Duplex } from "node:stream";
+import type { WebSocket } from "ws";
+
+import { WebSocketServer } from "ws";
+
+import { ForbiddenError } from "~/core/types/ForbiddenError.js";
+import { UnauthenticatedError, UnauthenticatedReason } from "~/core/types/UnauthenticatedError.js";
+
+import type { WsErrorResponse } from "./dto/WsErrorResponse.js";
+import type { WsContext } from "./types/WsContext.js";
+import type { WsRouter } from "./types/WsRouter.js";
+
+import { ApiErrorCodes } from "../ApiErrorCodes.js";
+
+export class WsServerAplikasi {
+  constructor(
+    private router: WsRouter,
+  ) {}
+
+  jalankan(serverRest: Server): void {
+    // WebSocket server — noServer:true agar tidak membuat HTTP server sendiri
+    const wss = new WebSocketServer({ noServer: true });
+
+    // Delegasikan upgrade event ke handler per-route
+    serverRest.on("upgrade", (req, socket, head) => {
+      this.handleKoneksiWs(wss, req, socket, head);
+    });
+  }
+
+  private handleKoneksiWs(
+    wss: WebSocketServer,
+    req: IncomingMessage,
+    socket: Duplex,
+    head: Buffer,
+  ): void {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      for (const route of this.router.getRoutes()) {
+        const pattern = new RegExp(`^${route.path}$`, "i");
+        if (!pattern.test(req.url ?? "")) {
+          continue;
+        }
+
+        if (route.targets.length === 0) {
+          break;
+        }
+
+        const callHandlers = async () => {
+          const context: WsContext = {
+            sesiPengguna: null,
+          };
+          for (const target of route.targets) {
+            try {
+              await target.handle(ws, req, context);
+            }
+            catch (e) {
+              this.handleError(ws, e);
+              break;
+            }
+          }
+        };
+        callHandlers().catch(e => this.handleError(ws, e));
+
+        return;
+      }
+
+      this.kirimResponseError(ws, 4404, {
+        error: ApiErrorCodes.RouteNotFound,
+        message: "route not found",
+      });
+    });
+  }
+
+  private handleError(ws: WebSocket, err: any) {
+    if (err instanceof UnauthenticatedError) {
+      this.kirimResponseError(ws, 4401, {
+        error: ApiErrorCodes.Unauthenticated,
+        message: err.reason === UnauthenticatedReason.InvalidToken ? "invalid token" : "unauthenticated",
+      });
+    }
+    else if (err instanceof ForbiddenError) {
+      this.kirimResponseError(ws, 4403, {
+        error: ApiErrorCodes.Forbidden,
+        message: "you don't have permission to access this resource.",
+      });
+    }
+    else {
+      console.error(err);
+      this.kirimResponseError(ws, 4500, {
+        error: ApiErrorCodes.ServerError,
+        message: "internal server error",
+      });
+    }
+  }
+
+  //   const url = req.url ?? "";
+
+  //   const matchNotifikasi = WS_NOTIFIKASI_PATTERN.exec(url);
+  //   if (matchNotifikasi) {
+  //     wss.handleUpgrade(req, socket, head, (ws) => {
+  //       handleNotifikasiWsUpgrade(ws, req).catch((err) => {
+  //         console.error(new Date().toISOString(), "[WS] Notifikasi upgrade error:", err);
+  //         ws.close(4500, "Internal server error");
+  //       });
+  //     });
+  //     return;
+  //   }
+
+  //   const matchChat = WS_CHAT_PATTERN.exec(url);
+  //   if (matchChat) {
+  //     const idChat = BigInt(matchChat[1]);
+  //     wss.handleUpgrade(req, socket, head, (ws) => {
+  //       handleChatWsUpgrade(ws, req, idChat).catch((err) => {
+  //         console.error(new Date().toISOString(), "[WS] Upgrade error:", err);
+  //         ws.close(4500, "Internal server error");
+  //       });
+  //     });
+  //     return;
+  //   }
+
+  //   const matchDashboard = WS_DASHBOARD_PATTERN.exec(url);
+  //   if (matchDashboard) {
+  //     wss.handleUpgrade(req, socket, head, (ws) => {
+  //       handleDashboardWsUpgrade(ws, req).catch((err) => {
+  //         console.error(new Date().toISOString(), "[WS] Dashboard upgrade error:", err);
+  //         ws.close(4500, "Internal server error");
+  //       });
+  //     });
+  //     return;
+  //   }
+
+  //   const matchChatbotMonitoring = WS_CHATBOT_MONITORING_PATTERN.exec(url);
+  //   if (matchChatbotMonitoring) {
+  //     wss.handleUpgrade(req, socket, head, (ws) => {
+  //       handleChatbotMonitoringWsUpgrade(ws, req).catch((err) => {
+  //         console.error(new Date().toISOString(), "[WS] Chatbot monitoring upgrade error:", err);
+  //         ws.close(4500, "Internal server error");
+  //       });
+  //     });
+  //     return;
+  //   }
+
+  //   // Tidak ada route yang cocok — tolak koneksi
+  //   socket.destroy();
+
+  private kirimResponseError(ws: WebSocket, code: number, response: WsErrorResponse) {
+    ws.close(code, JSON.stringify(response));
+  }
+}

@@ -12,6 +12,7 @@ import { createModelFaqViewLog } from "~/models/ModelFaqViewLog";
 import { createModelKategori } from "~/models/ModelKategori";
 import { createModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
 import { createModelLampiran } from "~/models/ModelLampiran";
+import { createModelLampiranPesanChat } from "~/models/ModelLampiranPesanChat";
 import { createModelNotifikasi } from "~/models/ModelNotifikasi";
 import { createModelPengguna } from "~/models/ModelPengguna";
 import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
@@ -20,11 +21,11 @@ import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
-import { ChatWsManager } from "~/modules/chatbot/business/ChatWsManager";
-import { KontrolChat } from "~/modules/chatbot/business/KontrolChat";
-import { RagWorkerClient } from "~/modules/chatbot/business/RagWorkerClient";
+import { ChatWsManager } from "~/modules/chatbot/api/ws/ChatWsManager";
+import { KontrolChat } from "~/modules/chatbot/application/KontrolChat";
+import { RagWorkerClient } from "~/modules/chatbot/application/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chatbot/data/RepositoriChat";
-import { RowConverterChat } from "~/modules/chat/data/RowConverterChat";
+import { RowConverterChat } from "~/modules/chatbot/data/row/RowConverterChat";
 import { ChatEventBus } from "~/modules/chatbot/event/ChatEventBus";
 import { ChatbotMonitoringWsManager } from "~/modules/dashboard/business/ChatbotMonitoringWsManager";
 import { DashboardWsManager } from "~/modules/dashboard/business/DashboardWsManager";
@@ -95,12 +96,23 @@ export class DI {
     return this.rowConverterChat;
   }
 
+  private static modelLampiranPesanChat: ModelStatic<Model> | null = null;
+  static provideModelLampiranPesanChat(): ModelStatic<Model> {
+    if (!this.modelLampiranPesanChat) {
+      this.modelLampiranPesanChat = createModelLampiranPesanChat(
+        this.provideSequelize(),
+      );
+    }
+    return this.modelLampiranPesanChat;
+  }
+
   private static repositoriChat: RepositoriChat | null = null;
   static provideRepositoriChat(): RepositoriChat {
     if (!this.repositoriChat) {
       this.repositoriChat = new RepositoriChat(
         this.provideModelChat(),
         this.provideModelPesanChat(),
+        this.provideModelLampiranPesanChat(),
         this.provideRowConverterChat(),
       );
     }

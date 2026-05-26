@@ -16,8 +16,8 @@ import { handleChatWsUpgrade } from "./api/chat.js";
 import { handleChatbotMonitoringWsUpgrade, handleDashboardWsUpgrade } from "./api/dashboard.js";
 import api from "./api/index.js";
 import { handleNotifikasiWsUpgrade } from "./api/notifikasi.js";
-import * as middlewares from "./middlewares.js";
 import { DI } from "./di/DI.js";
+import * as middlewares from "./middlewares.js";
 import { PeranPengguna } from "./modules/pengguna/domain/PeranPengguna.js";
 
 const app = express();
@@ -90,61 +90,5 @@ const WS_CHATBOT_MONITORING_PATTERN = /^\/api\/dashboard\/chatbot\/ws(?:\?.*)?$/
  * Dipanggil dari index.ts saat HTTP upgrade event.
  * Routing WS dilakukan di sini berdasarkan URL pattern.
  */
-export function handleWsUpgrade(
-  wss: WebSocketServer,
-  req: IncomingMessage,
-  socket: Duplex,
-  head: Buffer,
-): void {
-  const url = req.url ?? "";
-
-  const matchNotifikasi = WS_NOTIFIKASI_PATTERN.exec(url);
-  if (matchNotifikasi) {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      handleNotifikasiWsUpgrade(ws, req).catch((err) => {
-        console.error(new Date().toISOString(), "[WS] Notifikasi upgrade error:", err);
-        ws.close(4500, "Internal server error");
-      });
-    });
-    return;
-  }
-
-  const matchChat = WS_CHAT_PATTERN.exec(url);
-  if (matchChat) {
-    const idChat = BigInt(matchChat[1]);
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      handleChatWsUpgrade(ws, req, idChat).catch((err) => {
-        console.error(new Date().toISOString(), "[WS] Upgrade error:", err);
-        ws.close(4500, "Internal server error");
-      });
-    });
-    return;
-  }
-
-  const matchDashboard = WS_DASHBOARD_PATTERN.exec(url);
-  if (matchDashboard) {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      handleDashboardWsUpgrade(ws, req).catch((err) => {
-        console.error(new Date().toISOString(), "[WS] Dashboard upgrade error:", err);
-        ws.close(4500, "Internal server error");
-      });
-    });
-    return;
-  }
-
-  const matchChatbotMonitoring = WS_CHATBOT_MONITORING_PATTERN.exec(url);
-  if (matchChatbotMonitoring) {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      handleChatbotMonitoringWsUpgrade(ws, req).catch((err) => {
-        console.error(new Date().toISOString(), "[WS] Chatbot monitoring upgrade error:", err);
-        ws.close(4500, "Internal server error");
-      });
-    });
-    return;
-  }
-
-  // Tidak ada route yang cocok — tolak koneksi
-  socket.destroy();
-}
 
 export default app;

@@ -3,10 +3,10 @@ import { Worker } from "node:worker_threads";
 
 import type { RagConfig } from "~/core/config/domain/RagConfig.js";
 
+import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { PesanDariWorkerRag, PesanKeWorkerRag, RiwayatRag } from "../domain/PesanRagWorker.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
-import type { ChatWsManager } from "./ChatWsManager.js";
 
 export class RagWorkerClient {
   private worker: Worker | null = null;
@@ -101,48 +101,47 @@ export class RagWorkerClient {
             err,
           );
         });
-      return;
     }
 
-    this.repositoriChat
-      .tambahPesanChat(idChat, hasil.jawaban, true)
-      .then((pesanAsisten) => {
-        return this.repositoriChat.selesaiProsesChat(idChat).then(() => pesanAsisten);
-      })
-      .then((pesanAsisten) => {
-        // Fetch chat untuk dapatkan idPembuat sebelum emit event
-        return this.repositoriChat.getChatById(idChat).then((chat) => {
-          if (chat) {
-            this.chatEventBus.emit("pesan_baru", {
-              idChat,
-              idPembuat: chat.idPembuat,
-              tanggalDibuat: pesanAsisten.tanggalDibuat,
-            });
-          }
-          return pesanAsisten;
-        });
-      })
-      .then((pesanAsisten) => {
-        this.chatWsManager.broadcast(idChat, {
-          type: "jawaban",
-          pesan: {
-            id: pesanAsisten.id.toString(),
-            pesan: pesanAsisten.pesan,
-            tanggalDibuat: pesanAsisten.tanggalDibuat,
-          },
-        });
-      })
-      .catch((err) => {
-        console.error(
-          new Date().toISOString(),
-          "[RagWorkerClient] Gagal menyimpan jawaban ke DB:",
-          err,
-        );
-        this.chatWsManager.broadcast(idChat, {
-          type: "error",
-          pesan: "Gagal menyimpan jawaban. Silakan coba lagi.",
-        });
-      });
+    // this.repositoriChat
+    //   .buatPesanChat(idChat, hasil.jawaban, true)
+    //   .then((pesanAsisten) => {
+    //     return this.repositoriChat.selesaiProsesChat(idChat).then(() => pesanAsisten);
+    //   })
+    //   .then((pesanAsisten) => {
+    //     // Fetch chat untuk dapatkan idPembuat sebelum emit event
+    //     return this.repositoriChat.getChatById(idChat).then((chat) => {
+    //       if (chat) {
+    //         this.chatEventBus.emit("pesan_baru", {
+    //           idChat,
+    //           idPembuat: chat.idPembuat,
+    //           tanggalDibuat: pesanAsisten.tanggalDibuat,
+    //         });
+    //       }
+    //       return pesanAsisten;
+    //     });
+    //   })
+    //   .then((pesanAsisten) => {
+    //     this.chatWsManager.broadcast(idChat, {
+    //       type: "jawaban",
+    //       pesan: {
+    //         id: pesanAsisten.id.toString(),
+    //         pesan: pesanAsisten.pesan,
+    //         tanggalDibuat: pesanAsisten.tanggalDibuat,
+    //       },
+    //     });
+    //   })
+    //   .catch((err) => {
+    //     console.error(
+    //       new Date().toISOString(),
+    //       "[RagWorkerClient] Gagal menyimpan jawaban ke DB:",
+    //       err,
+    //     );
+    //     this.chatWsManager.broadcast(idChat, {
+    //       type: "error",
+    //       pesan: "Gagal menyimpan jawaban. Silakan coba lagi.",
+    //     });
+    //   });
   }
 
   berhenti(): void {

@@ -21,14 +21,6 @@ const server = app.listen(port, () => {
   console.log(`Listening: http://localhost:${port}`);
 });
 
-// WebSocket server — noServer:true agar tidak membuat HTTP server sendiri
-const wss = new WebSocketServer({ noServer: true });
-
-// Delegasikan upgrade event ke handler per-route
-server.on("upgrade", (req, socket, head) => {
-  handleWsUpgrade(wss, req, socket, head);
-});
-
 server.on("error", (err) => {
   if ("code" in err && err.code === "EADDRINUSE") {
     console.error(`Port ${env.PORT} is already in use. Please choose another port or stop the process using it.`);
