@@ -3,10 +3,9 @@ import type WebSocket from "ws";
 
 import express from "express";
 
-import { multerUpload } from "../config/multerConfig.js";
-
 import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 
+import { multerUpload } from "../config/multerConfig.js";
 import { DI } from "../di/DI.js";
 import { auth } from "../middlewares.js";
 
@@ -38,7 +37,7 @@ const repositoriSession = DI.provideRepositoriSession();
  *         description: Sesi chat berhasil dibuat, pertanyaan masuk antrian RAG
  */
 routerChat.post("/", auth([PeranPengguna.Karyawan]), multerUpload.array("files", 5), (req, res, next) => {
-  kontrolChat.submitPertanyaan(req, res).catch(next);
+  kontrolChat.buatChat(req, res).catch(next);
 });
 
 /**

@@ -1,16 +1,19 @@
 import type { Request, Response } from "express";
 import type WebSocket from "ws";
 
-import type { RepositoriChat } from "../data/RepositoriChat.js";
-import type { KoneksiChat } from "../domain/KoneksiChat.js";
-import type { ChatEventBus } from "../event/ChatEventBus.js";
-import type { ChatWsManager } from "./ChatWsManager.js";
-import type { RagWorkerClient } from "./RagWorkerClient.js";
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
 import type { JenisPesan } from "../../upload/domain/Lampiran.js";
-import { lampiranToDto } from "../../upload/domain/Lampiran.js";
+import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
+import type { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
+import type { RepositoriChat } from "../data/RepositoriChat.js";
+import type { ChatEventBus } from "../event/ChatEventBus.js";
+import type { RagWorkerClient } from "./RagWorkerClient.js";
 
+import { lampiranToDto } from "../../upload/domain/Lampiran.js";
+import { Chat } from "../domain/Chat.js";
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
+import { PesanChat } from "../domain/PesanChat.js";
+import { validasiBuatChatDto } from "./dto/BuatChatDto.js";
 
 /**
  * Menyimpan file-file dari req.files ke DB, langsung diasosiasikan ke idPesan.
@@ -24,7 +27,8 @@ async function simpanFileDariRequest(
   repositoriLampiran: RepositoriLampiran,
 ) {
   const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-  if (files.length === 0) return [];
+  if (files.length === 0)
+    return [];
 
   const hasilSimpan = await Promise.all(
     files.map(file =>
@@ -76,42 +80,41 @@ export class KontrolChat {
       });
   }
 
-  async submitPertanyaan(req: Request, res: Response): Promise<void> {
-    const dto = validasiPertanyaan(req.body);
+  async buatChat(req: Request, res: Response): Promise<void> {
+    const dto = validasiBuatChatDto(req);
     const idPembuat = req.sesiPengguna!.idPengguna!;
 
-    const subjek = dto.pesan.length > 50
-      ? `${dto.pesan.substring(0, 50)}...`
+    const subjekChat = dto.pesan.length > 50
+      ? `${dto.pesan.substring(0, 47)}...`
       : dto.pesan;
-    const chatBaru = await this.repositoriChat.buatChat(idPembuat, subjek);
-    const idChat = chatBaru.id;
+    const chat = new Chat(0n, idPembuat, new Date(), subjekChat, true, false);
+    await this.repositoriChat.buatChat(chat);
 
-    const pesanKaryawan = await this.repositoriChat.tambahPesanChat(idChat, dto.pesan, false);
+    const pesanChatKaryawan = new PesanChat(0n, chat.id, dto.pesan, chat.tanggalDibuat, false, false);
+    await this.repositoriChat.buatPesanChat(pesanChatKaryawan);
 
     // Simpan lampiran langsung dari form-data (jika ada)
-    const lampiran = await simpanFileDariRequest(
-      req, idPembuat, pesanKaryawan.id, "chat", this.repositoriLampiran,
-    );
+    // const lampiran = await simpanFileDariRequest(
+    //   req,
+    //   idPembuat,
+    //   pesanKaryawan.id,
+    //   "chat",
+    //   this.repositoriLampiran,
+    // );
 
     this.chatEventBus.emit("chat_dibuat", {
-      idChat: chatBaru.id,
+      idChat: chat.id,
       idPembuat,
-      subjek: chatBaru.subjek,
-      tanggalDibuat: chatBaru.tanggalDibuat,
+      subjek: chat.subjek,
+      tanggalDibuat: chat.tanggalDibuat,
     });
 
-    this.ragWorkerClient.tambahTugas(idChat, [
+    this.ragWorkerClient.tambahTugas(chat.id, [
       { role: "user", content: dto.pesan },
     ]);
 
     res.status(200).json({
-      idChat: idChat.toString(),
-      pesan: {
-        id: pesanKaryawan.id.toString(),
-        pesan: pesanKaryawan.pesan,
-        tanggalDibuat: pesanKaryawan.tanggalDibuat,
-        lampiran,
-      },
+      idChat: chat.id.toString(),
     });
   }
 
@@ -141,7 +144,11 @@ export class KontrolChat {
 
     // Simpan lampiran langsung dari form-data (jika ada)
     const lampiran = await simpanFileDariRequest(
-      req, idPembuat, pesanKaryawan.id, "chat", this.repositoriLampiran,
+      req,
+      idPembuat,
+      pesanKaryawan.id,
+      "chat",
+      this.repositoriLampiran,
     );
 
     this.chatEventBus.emit("pesan_baru", {
@@ -231,7 +238,7 @@ export class KontrolChat {
       return;
     }
 
-    const koneksi: KoneksiChat = { ws, idChat, idSession };
+    const koneksi: KoneksiWsChat = { ws, idChat, idSession };
     this.chatWsManager.tambah(koneksi);
 
     ws.on("close", () => {

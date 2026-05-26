@@ -11,6 +11,7 @@ import { createModelFaqSurvei } from "~/models/ModelFaqSurvei";
 import { createModelFaqViewLog } from "~/models/ModelFaqViewLog";
 import { createModelKategori } from "~/models/ModelKategori";
 import { createModelKnowledgeBase } from "~/models/ModelKnowledgeBase";
+import { createModelLampiran } from "~/models/ModelLampiran";
 import { createModelNotifikasi } from "~/models/ModelNotifikasi";
 import { createModelPengguna } from "~/models/ModelPengguna";
 import { createModelPeranPengguna } from "~/models/ModelPeranPengguna";
@@ -18,13 +19,13 @@ import { createModelPesanChat } from "~/models/ModelPesanChat";
 import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
-import { createModelLampiran } from "~/models/ModelLampiran";
 import { createModelTiket } from "~/models/ModelTiket";
-import { ChatWsManager } from "~/modules/chat/business/ChatWsManager";
-import { KontrolChat } from "~/modules/chat/business/KontrolChat";
-import { RagWorkerClient } from "~/modules/chat/business/RagWorkerClient";
-import { RepositoriChat } from "~/modules/chat/data/RepositoriChat";
-import { ChatEventBus } from "~/modules/chat/event/ChatEventBus";
+import { ChatWsManager } from "~/modules/chatbot/business/ChatWsManager";
+import { KontrolChat } from "~/modules/chatbot/business/KontrolChat";
+import { RagWorkerClient } from "~/modules/chatbot/business/RagWorkerClient";
+import { RepositoriChat } from "~/modules/chatbot/data/RepositoriChat";
+import { RowConverterChat } from "~/modules/chat/data/RowConverterChat";
+import { ChatEventBus } from "~/modules/chatbot/event/ChatEventBus";
 import { ChatbotMonitoringWsManager } from "~/modules/dashboard/business/ChatbotMonitoringWsManager";
 import { DashboardWsManager } from "~/modules/dashboard/business/DashboardWsManager";
 import { KontrolDashboard } from "~/modules/dashboard/business/KontrolDashboard";
@@ -86,6 +87,13 @@ export class DI {
     return this.modelPesanChat;
   }
 
+  private static rowConverterChat: RowConverterChat | null = null;
+  static provideRowConverterChat(): RowConverterChat {
+    if (!this.rowConverterChat) {
+      this.rowConverterChat = new RowConverterChat();
+    }
+    return this.rowConverterChat;
+  }
 
   private static repositoriChat: RepositoriChat | null = null;
   static provideRepositoriChat(): RepositoriChat {
@@ -93,6 +101,7 @@ export class DI {
       this.repositoriChat = new RepositoriChat(
         this.provideModelChat(),
         this.provideModelPesanChat(),
+        this.provideRowConverterChat(),
       );
     }
     return this.repositoriChat;
@@ -538,8 +547,6 @@ export class DI {
     }
     return this.repositoriLampiran;
   }
-
-
 
   static registerWsHandlers(): void {
     WsSessionRegistry.instance.daftarkan(ChatWsManager.instance);

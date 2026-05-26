@@ -1,6 +1,6 @@
 import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
 
-import type { KoneksiChat } from "../domain/KoneksiChat.js";
+import type { KoneksiChat } from "../api/ws/KoneksiWsChat.js";
 
 /**
  * ChatWsManager — mengelola koneksi WebSocket aktif dengan dual-index:
@@ -11,45 +11,46 @@ export class ChatWsManager implements IWsSessionHandler {
   private constructor() {}
   static readonly instance = new ChatWsManager();
 
-  private readonly byChat = new Map<bigint, Set<KoneksiChat>>();
-  private readonly bySession = new Map<string, Set<KoneksiChat>>();
+  private readonly koneksiChatBaru = new Map<string, Set<KoneksiChat>>();
+  private readonly koneksiByChat = new Map<bigint, Set<KoneksiChat>>();
+  private readonly koneksiBySession = new Map<string, Set<KoneksiChat>>();
 
   tambah(koneksi: KoneksiChat): void {
     // Index by idChat
-    if (!this.byChat.has(koneksi.idChat)) {
-      this.byChat.set(koneksi.idChat, new Set());
+    if (!this.koneksiByChat.has(koneksi.idChat)) {
+      this.koneksiByChat.set(koneksi.idChat, new Set());
     }
-    this.byChat.get(koneksi.idChat)!.add(koneksi);
+    this.koneksiByChat.get(koneksi.idChat)!.add(koneksi);
 
     // Index by idSession
-    if (!this.bySession.has(koneksi.idSession)) {
-      this.bySession.set(koneksi.idSession, new Set());
+    if (!this.koneksiBySession.has(koneksi.idSession)) {
+      this.koneksiBySession.set(koneksi.idSession, new Set());
     }
-    this.bySession.get(koneksi.idSession)!.add(koneksi);
+    this.koneksiBySession.get(koneksi.idSession)!.add(koneksi);
   }
 
   hapus(koneksi: KoneksiChat): void {
     // Hapus dari index idChat
-    const setChat = this.byChat.get(koneksi.idChat);
+    const setChat = this.koneksiByChat.get(koneksi.idChat);
     if (setChat) {
       setChat.delete(koneksi);
       if (setChat.size === 0) {
-        this.byChat.delete(koneksi.idChat);
+        this.koneksiByChat.delete(koneksi.idChat);
       }
     }
 
     // Hapus dari index idSession
-    const setSession = this.bySession.get(koneksi.idSession);
+    const setSession = this.koneksiBySession.get(koneksi.idSession);
     if (setSession) {
       setSession.delete(koneksi);
       if (setSession.size === 0) {
-        this.bySession.delete(koneksi.idSession);
+        this.koneksiBySession.delete(koneksi.idSession);
       }
     }
   }
 
   broadcast(idChat: bigint, pesan: object): void {
-    const koneksiSet = this.byChat.get(idChat);
+    const koneksiSet = this.koneksiByChat.get(idChat);
     if (!koneksiSet)
       return;
 
@@ -66,7 +67,7 @@ export class ChatWsManager implements IWsSessionHandler {
    * session_expired ke semua koneksi WS milik session tersebut, lalu tutup.
    */
   invalidasiSession(idSession: string): void {
-    const koneksiSet = this.bySession.get(idSession);
+    const koneksiSet = this.koneksiBySession.get(idSession);
     if (!koneksiSet)
       return;
 
@@ -77,15 +78,15 @@ export class ChatWsManager implements IWsSessionHandler {
         koneksi.ws.close();
       }
       // Hapus dari index idChat
-      const setChat = this.byChat.get(koneksi.idChat);
+      const setChat = this.koneksiByChat.get(koneksi.idChat);
       if (setChat) {
         setChat.delete(koneksi);
         if (setChat.size === 0) {
-          this.byChat.delete(koneksi.idChat);
+          this.koneksiByChat.delete(koneksi.idChat);
         }
       }
     }
 
-    this.bySession.delete(idSession);
+    this.koneksiBySession.delete(idSession);
   }
 }

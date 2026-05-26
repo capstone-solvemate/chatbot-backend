@@ -1,6 +1,6 @@
-import type { ChatEventBus } from "~/modules/chat/event/ChatEventBus";
-import type { EventChatDibuatPayload } from "~/modules/chat/event/payload/EventChatDibuatPayload.js";
-import type { EventPesanChatBaruPayload } from "~/modules/chat/event/payload/EventPesanChatBaruPayload.js";
+import type { ChatEventBus } from "~/modules/chatbot/event/ChatEventBus.js";
+import type { EventChatDibuatPayload } from "~/modules/chatbot/event/payload/EventChatDibuatPayload.js";
+import type { EventPesanChatBaruPayload } from "~/modules/chatbot/event/payload/EventPesanChatBaruPayload.js";
 import type { EventStatusTiketDiubahPayload } from "~/modules/tiket/event/payload/EventStatusTiketDiubahPayload.js";
 import type { EventTiketDibuatPayload } from "~/modules/tiket/event/payload/EventTiketDibuatPayload.js";
 import type { TiketEventBus } from "~/modules/tiket/event/TiketEventBus";

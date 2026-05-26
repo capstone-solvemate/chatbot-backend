@@ -2,8 +2,9 @@ import type { Model, ModelStatic } from "sequelize";
 
 import { Op } from "sequelize";
 
-import { Lampiran } from "../domain/Lampiran.js";
 import type { JenisPesan } from "../domain/Lampiran.js";
+
+import { Lampiran } from "../domain/Lampiran.js";
 
 type ModelLampiran = ModelStatic<Model>;
 

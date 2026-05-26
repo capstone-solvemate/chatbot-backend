@@ -2,71 +2,24 @@ import type { Model, ModelStatic } from "sequelize";
 
 import { Op } from "sequelize";
 
-import { TestGuard } from "~/core/test/TestGuard.js";
+import type { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
+import type { RowConverterChat } from "./row/RowConverterChat.js";
 
 import { Chat } from "../domain/Chat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 
-type ModelChat = ModelStatic<Model>;
-type ModelPesanChat = ModelStatic<Model>;
-
 export class RepositoriChat {
   constructor(
-    private readonly modelChat: ModelChat,
-    private readonly modelPesanChat: ModelPesanChat,
+    private readonly modelChat: ModelStatic<Model>,
+    private readonly modelPesanChat: ModelStatic<Model>,
+    private readonly modelLampiranPesanChat: ModelStatic<Model>,
+    private readonly rowConverterChat: RowConverterChat,
   ) {}
 
-  // --- Helper ---
-
-  private rowKeChat(c: Model): Chat {
-    return new Chat(
-      BigInt(c.getDataValue("id")),
-      c.getDataValue("id_pembuat"),
-      c.getDataValue("tanggal_dibuat"),
-      c.getDataValue("subjek"),
-      c.getDataValue("sedang_diproses"),
-      c.getDataValue("dialihkan_ke_tiket"),
-    );
-  }
-
-  private rowKePesanChat(p: Model): PesanChat {
-    return new PesanChat(
-      BigInt(p.getDataValue("id")),
-      BigInt(p.getDataValue("id_chat")),
-      p.getDataValue("pesan"),
-      p.getDataValue("tanggal_dibuat"),
-      p.getDataValue("chat_asisten"),
-      p.getDataValue("gagal"),
-    );
-  }
-
-  private chatKeRow(chat: Chat): Record<string, any> {
-    return {
-      id: chat.id,
-      id_pembuat: chat.idPembuat,
-      tanggal_dibuat: chat.tanggalDibuat,
-      subjek: chat.subjek,
-      sedang_diproses: chat.sedangDiproses,
-      dialihkan_ke_tiket: chat.dialihkanKeTiket,
-    };
-  }
-
-  testChatKeRow(chat: Chat): Record<string, any> {
-    TestGuard.ensureInTestMode();
-    return this.chatKeRow(chat);
-  }
-
-  // --- Chat ---
-
-  async buatChat(idPembuat: number, subjek: string): Promise<Chat> {
-    const chat = await this.modelChat.create({
-      id_pembuat: idPembuat,
-      subjek,
-      sedang_diproses: false,
-      diproses_sejak: null,
-      dialihkan_ke_tiket: false,
-    });
-    return this.rowKeChat(chat);
+  async buatChat(chat: Chat): Promise<void> {
+    const { id, ...row } = this.rowConverterChat.chatKeRow(chat);
+    const { id: idBaru } = (await this.modelChat.create(row)).toJSON();
+    chat.id = idBaru;
   }
 
   async getChatById(id: bigint): Promise<Chat | null> {
@@ -177,14 +130,10 @@ export class RepositoriChat {
     }
   }
 
-  async tambahPesanChat(idChat: bigint, pesan: string, chatAsisten: boolean): Promise<PesanChat> {
-    const pesanChat = await this.modelPesanChat.create({
-      id_chat: idChat,
-      pesan,
-      chat_asisten: chatAsisten,
-      gagal: false,
-    });
-    return this.rowKePesanChat(pesanChat);
+  async buatPesanChat(pesanChat: PesanChat): Promise<void> {
+    const { id, ...rowPesanChatTanpaId } = this.rowConverterChat.pesanChatKeRow(pesanChat);
+    const { id: idPesanChatBaru } = (await this.modelPesanChat.create(rowPesanChatTanpaId)).toJSON();
+    pesanChat.id = idPesanChatBaru;
   }
 
   async getHistoriPesan(idChat: bigint): Promise<PesanChat[]> {
@@ -193,5 +142,35 @@ export class RepositoriChat {
       order: [["tanggal_dibuat", "ASC"]],
     });
     return pesanChats.map(p => this.rowKePesanChat(p));
+  }
+
+  async buatLampiranPesanChat(lampiranPesanChat: LampiranPesanChat): Promise<void> {
+    const { id, ...rowLampiranTanpaId } = this.rowConverterChat.lampiranPesanChatKeRow(lampiranPesanChat);
+    const { id: idBaru } = (await this.modelLampiranPesanChat.create(rowLampiranTanpaId)).toJSON();
+    lampiranPesanChat.id = idBaru;
+  }
+
+  // --- Helper ---
+
+  private rowKeChat(c: Model): Chat {
+    return new Chat(
+      BigInt(c.getDataValue("id")),
+      c.getDataValue("id_pembuat"),
+      c.getDataValue("tanggal_dibuat"),
+      c.getDataValue("subjek"),
+      c.getDataValue("sedang_diproses"),
+      c.getDataValue("dialihkan_ke_tiket"),
+    );
+  }
+
+  private rowKePesanChat(p: Model): PesanChat {
+    return new PesanChat(
+      BigInt(p.getDataValue("id")),
+      BigInt(p.getDataValue("id_chat")),
+      p.getDataValue("pesan"),
+      p.getDataValue("tanggal_dibuat"),
+      p.getDataValue("chat_asisten"),
+      p.getDataValue("gagal"),
+    );
   }
 }
