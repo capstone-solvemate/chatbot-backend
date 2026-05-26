@@ -9,7 +9,7 @@
     "typeRoots": ["./node_modules/@types", "./types"],
     "strict": true,
     "noImplicitAny": true,
-    "outDir": "dist/src",
+    "outDir": "build",
     "sourceMap": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
