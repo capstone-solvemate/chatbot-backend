@@ -29,7 +29,6 @@ module.exports = {
 
   async down(queryInterface, _Sequelize) {
     await queryInterface.removeColumn(NAMA_TABEL, "sedang_diproses");
-    await queryInterface.removeColumn(NAMA_TABEL, "diproses_sejak");
     await queryInterface.removeColumn(NAMA_TABEL, "dialihkan_ke_tiket");
     await queryInterface.removeColumn(NAMA_TABEL_PESAN_CHAT, "gagal");
   },
