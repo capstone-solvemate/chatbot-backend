@@ -1,6 +1,4 @@
-import { WebSocketServer } from "ws";
-
-import app, { handleWsUpgrade } from "./app.js";
+import app from "./app.js";
 import { DI } from "./di/DI.js";
 import { env } from "./env.js";
 

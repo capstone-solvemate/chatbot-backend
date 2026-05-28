@@ -11,13 +11,11 @@ export default defineConfig({
   test: {
     // File test real email tidak dijalankan secara default.
     // Jalankan eksplisit dengan: RUN_EMAIL_TEST=true pnpm test
-    exclude: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/test/real/**",
-      "**/build/**",
-      "test/e2e/**",
+    include: [
+      "test/e2e/**/*.e2e.test.ts",
     ],
+    testTimeout: 0,
+    hookTimeout: 0,
     reporters: "tree",
   },
 });

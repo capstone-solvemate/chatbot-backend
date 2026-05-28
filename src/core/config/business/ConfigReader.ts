@@ -7,7 +7,12 @@ import { RagConfig } from "../domain/RagConfig.js";
 
 export class ConfigReader {
   constructor() {
-    dotenv.config();
+    if (process.env.NODE_ENV === "test") {
+      dotenv.config({ path: ".env.test" });
+    }
+    else {
+      dotenv.config();
+    }
   }
 
   read(): Config {
