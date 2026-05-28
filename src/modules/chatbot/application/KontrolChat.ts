@@ -1,8 +1,6 @@
 import type { Request, Response } from "express";
 import type WebSocket from "ws";
 
-import type { WsContext } from "~/core/api/ws/types/WsContext.js";
-
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
 import type { JenisPesan } from "../../upload/domain/Lampiran.js";
 import type { ManajerWsChat } from "../api/ws/ManajerWsChat.js";
@@ -13,7 +11,7 @@ import type { RagWorkerClient } from "./RagWorkerClient.js";
 import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import { Chat } from "../domain/Chat.js";
-import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
+import { validasiBalasChat } from "../domain/Dto.js";
 import { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 import { validasiBuatChatDto } from "./dto/BuatChatDto.js";
@@ -260,10 +258,10 @@ export class KontrolChat {
     }
 
     const koneksi = new KoneksiWsChat(ws, idChat, idSession);
-    this.chatWsManager.tambah(koneksi);
+    this.manajerWsChat.tambah(koneksi);
 
     ws.on("close", () => {
-      this.chatWsManager.hapus(koneksi);
+      this.manajerWsChat.hapus(koneksi);
     });
 
     ws.on("error", (err) => {
@@ -272,7 +270,7 @@ export class KontrolChat {
         `[KontrolChat] WS error idChat=${idChat}:`,
         err.message,
       );
-      this.chatWsManager.hapus(koneksi);
+      this.manajerWsChat.hapus(koneksi);
     });
   }
 

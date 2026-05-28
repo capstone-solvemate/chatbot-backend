@@ -16,7 +16,7 @@ export class WsHandlerListenChatBaru extends WsHandler {
   }
 
   async handle(ws: WebSocket, req: IncomingMessage, context: WsContext): Promise<void> {
-    const idKoneksi = await this.kontrolChat.listenPesanChatBaru(ws, context);
+    const idKoneksi = await this.kontrolChat.listenPesanChatBaru(ws, context.sesiPengguna!.sessionId);
 
     const payload: PayloadIdKoneksiWsChat = {
       idKoneksi,

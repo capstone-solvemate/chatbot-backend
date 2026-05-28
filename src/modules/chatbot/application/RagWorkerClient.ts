@@ -3,7 +3,7 @@ import { Worker } from "node:worker_threads";
 
 import type { RagConfig } from "~/core/config/domain/RagConfig.js";
 
-import type { ChatWsManager } from "../api/ws/ManajerWsChat.js";
+import type { ManajerWsChat } from "../api/ws/ManajerWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { PesanDariWorkerRag, PesanKeWorkerRag, RiwayatRag } from "../domain/PesanRagWorker.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
@@ -13,7 +13,7 @@ export class RagWorkerClient {
 
   constructor(
     private readonly config: RagConfig,
-    private readonly chatWsManager: ChatWsManager,
+    private readonly manajerWsChat: ManajerWsChat,
     private readonly repositoriChat: RepositoriChat,
     private readonly chatEventBus: ChatEventBus,
   ) {}
@@ -89,7 +89,7 @@ export class RagWorkerClient {
       this.repositoriChat.selesaiProsesChat(idChat)
         .then(() => this.repositoriChat.tandaiPesanTerakhirGagal(idChat))
         .then(() => {
-          this.chatWsManager.broadcast(idChat, {
+          this.manajerWsChat.broadcast(idChat, {
             type: "error",
             pesan: hasil.pesanError,
           });
@@ -122,7 +122,7 @@ export class RagWorkerClient {
     //     });
     //   })
     //   .then((pesanAsisten) => {
-    //     this.chatWsManager.broadcast(idChat, {
+    //     this.manajerWsChat.broadcast(idChat, {
     //       type: "jawaban",
     //       pesan: {
     //         id: pesanAsisten.id.toString(),
@@ -137,7 +137,7 @@ export class RagWorkerClient {
     //       "[RagWorkerClient] Gagal menyimpan jawaban ke DB:",
     //       err,
     //     );
-    //     this.chatWsManager.broadcast(idChat, {
+    //     this.manajerWsChat.broadcast(idChat, {
     //       type: "error",
     //       pesan: "Gagal menyimpan jawaban. Silakan coba lagi.",
     //     });

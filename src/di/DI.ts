@@ -21,7 +21,7 @@ import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
-import { ChatWsManager } from "~/modules/chatbot/api/ws/ManajerWsChat";
+import { ManajerWsChat } from "~/modules/chatbot/api/ws/ManajerWsChat";
 import { KontrolChat } from "~/modules/chatbot/application/KontrolChat";
 import { RagWorkerClient } from "~/modules/chatbot/application/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chatbot/data/RepositoriChat";
@@ -46,6 +46,7 @@ import { NotifikasiSubscriber } from "~/modules/notifikasi/web/event/NotifikasiS
 import { KontrolOtentikasi } from "~/modules/otentikasi/business/KontrolOtentikasi";
 import { RepositoriSession } from "~/modules/otentikasi/business/RepositoriSession";
 import { RepositoriResetPassword } from "~/modules/otentikasi/data/RepositoriResetPassword";
+import { LogoutEventBus } from "~/modules/otentikasi/event/LogoutEventBus";
 import { KontrolPengguna } from "~/modules/pengguna/business/KontrolPengguna";
 import { RepositoriPengguna } from "~/modules/pengguna/data/RepositoriPengguna";
 import { KontrolKategori } from "~/modules/settings/kategori/business/KontrolKategori";
@@ -127,8 +128,22 @@ export class DI {
     return this.emailWorkerClient;
   }
 
-  static provideChatWsManager(): ChatWsManager {
-    return ChatWsManager.instance;
+  private static logoutEventBus: LogoutEventBus | null = null;
+  static provideLogoutEventBus(): LogoutEventBus {
+    if (!this.logoutEventBus) {
+      this.logoutEventBus = new LogoutEventBus();
+    }
+    return this.logoutEventBus;
+  }
+
+  private static manajerWsChat: ManajerWsChat | null = null;
+  static provideManajerWsChat(): ManajerWsChat {
+    if (!this.manajerWsChat) {
+      this.manajerWsChat = new ManajerWsChat(
+        this.provideLogoutEventBus(),
+      );
+    }
+    return this.manajerWsChat;
   }
 
   private static modelPengguna: ModelStatic<Model<any, any>> | null = null;
@@ -244,7 +259,7 @@ export class DI {
     if (!this.ragWorkerClient) {
       this.ragWorkerClient = new RagWorkerClient(
         this.provideConfig().ragConfig,
-        this.provideChatWsManager(),
+        this.provideManajerWsChat(),
         this.provideRepositoriChat(),
         this.provideChatEventBus(),
       );
@@ -417,7 +432,7 @@ export class DI {
     if (!this.kontrolChat) {
       this.kontrolChat = new KontrolChat(
         this.provideRepositoriChat(),
-        this.provideChatWsManager(),
+        this.provideManajerWsChat(),
         this.provideRagWorkerClient(),
         this.provideChatEventBus(),
         this.provideRepositoriLampiran(),
@@ -561,7 +576,6 @@ export class DI {
   }
 
   static registerWsHandlers(): void {
-    WsSessionRegistry.instance.daftarkan(ChatWsManager.instance);
     WsSessionRegistry.instance.daftarkan(this.provideNotifikasiWsManager());
     WsSessionRegistry.instance.daftarkan(this.provideDashboardWsManager());
     WsSessionRegistry.instance.daftarkan(this.provideChatbotMonitoringWsManager());
