@@ -3,7 +3,7 @@ import { Worker } from "node:worker_threads";
 
 import type { RagConfig } from "~/core/config/domain/RagConfig.js";
 
-import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
+import type { ChatWsManager } from "../api/ws/ManajerWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { PesanDariWorkerRag, PesanKeWorkerRag, RiwayatRag } from "../domain/PesanRagWorker.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";

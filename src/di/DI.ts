@@ -21,7 +21,7 @@ import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
-import { ChatWsManager } from "~/modules/chatbot/api/ws/ChatWsManager";
+import { ChatWsManager } from "~/modules/chatbot/api/ws/ManajerWsChat";
 import { KontrolChat } from "~/modules/chatbot/application/KontrolChat";
 import { RagWorkerClient } from "~/modules/chatbot/application/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chatbot/data/RepositoriChat";

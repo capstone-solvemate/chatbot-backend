@@ -1,38 +1,15 @@
-import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
-
 import { describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "~/core/types/UnauthenticatedError.js";
-import { buatAppExpress } from "~test/ExpressStub";
+import { jalankanWsServerAplikasi } from "~test/stub/WsStub.js";
 
 import type { WsErrorResponse } from "./dto/WsErrorResponse.js";
 
 import { ApiErrorCodes } from "../ApiErrorCodes.js";
 import { mockWsHandler } from "./types/WsHandlerStub.js";
 import { WsRouter } from "./types/WsRouter.js";
-import { WsServerAplikasi } from "./WsServerAplikasi.js";
-
-function jalankanWsServerAplikasi(router: WsRouter): {
-  restServer: Server;
-  port: number;
-} {
-  const appExpress = buatAppExpress();
-  const server = appExpress.listen(0);
-
-  const wssa = new WsServerAplikasi(router);
-  wssa.jalankan(server);
-
-  const port = (server.address() as AddressInfo).port;
-
-  return {
-
-    restServer: server,
-    port,
-  };
-}
 
 describe("WsServerAplikasi", () => {
   it("harus memanggil fungsi 'handle' class 'WebSocketHandler'", async () => {

@@ -1,19 +1,36 @@
-import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
+import * as uuid from "uuid";
+
+import { ManajerWsWithAuth } from "~/core/api/ws/types/ManajerWsWithAuth.js";
 
 import type { KoneksiWsChat } from "./KoneksiWsChat.js";
 
-/**
- * ChatWsManager — mengelola koneksi WebSocket aktif dengan dual-index:
- * - byChat: untuk broadcast jawaban RAG ke semua tab dengan idChat yang sama
- * - bySession: untuk invalidasi semua koneksi saat logout
- */
-export class ChatWsManager implements IWsSessionHandler {
-  private constructor() {}
-  static readonly instance = new ChatWsManager();
-
-  private readonly koneksiChatBaru = new Map<string, Set<KoneksiWsChat>>();
+export class ManajerWsChat extends ManajerWsWithAuth {
+  private readonly koneksiChatById = new Map<string, KoneksiWsChat>();
   private readonly koneksiByChat = new Map<bigint, Set<KoneksiWsChat>>();
   private readonly koneksiBySession = new Map<string, Set<KoneksiWsChat>>();
+
+  private generateIdKoneksi(): string {
+    let idKoneksi = "";
+    do {
+      idKoneksi = uuid.v4().toString();
+    } while (this.koneksiChatById.has(idKoneksi));
+
+    return idKoneksi;
+  }
+
+  tambahKoneksiPesanBaru(koneksiWs: KoneksiWsChat): string {
+    const idKoneksi = this.generateIdKoneksi();
+    koneksiWs.idKoneksi = idKoneksi;
+
+    this.koneksiChatById.set(idKoneksi, koneksiWs);
+
+    if (!this.koneksiBySession.has(koneksiWs.idSession)) {
+      this.koneksiBySession.set(koneksiWs.idSession, new Set());
+    }
+    this.koneksiBySession.get(koneksiWs.idSession)!.add(koneksiWs);
+
+    return idKoneksi;
+  }
 
   tambah(koneksi: KoneksiWsChat): void {
     // Index by idChat
@@ -62,11 +79,7 @@ export class ChatWsManager implements IWsSessionHandler {
     }
   }
 
-  /**
-   * Dipanggil oleh WsSessionRegistry saat logout — kirim notifikasi
-   * session_expired ke semua koneksi WS milik session tersebut, lalu tutup.
-   */
-  invalidasiSession(idSession: string): void {
+  async handleLogout(idSession: string): Promise<void> {
     const koneksiSet = this.koneksiBySession.get(idSession);
     if (!koneksiSet)
       return;

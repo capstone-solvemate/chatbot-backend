@@ -1,5 +1,7 @@
 import type { Model, ModelStatic } from "sequelize";
 
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Op } from "sequelize";
 
 import type { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
@@ -144,10 +146,16 @@ export class RepositoriChat {
     return pesanChats.map(p => this.rowKePesanChat(p));
   }
 
-  async buatLampiranPesanChat(lampiranPesanChat: LampiranPesanChat): Promise<void> {
+  async buatLampiranPesanChat(lampiranPesanChat: LampiranPesanChat, file: Express.Multer.File): Promise<void> {
     const { id, ...rowLampiranTanpaId } = this.rowConverterChat.lampiranPesanChatKeRow(lampiranPesanChat);
     const { id: idBaru } = (await this.modelLampiranPesanChat.create(rowLampiranTanpaId)).toJSON();
     lampiranPesanChat.id = idBaru;
+
+    // Pastikan direktori sudah ada
+    await fs.mkdir(path.dirname(lampiranPesanChat.path), { recursive: true });
+
+    // Simpan buffer ke file
+    await fs.writeFile(lampiranPesanChat.path, file.buffer);
   }
 
   // --- Helper ---

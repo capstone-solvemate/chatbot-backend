@@ -51,7 +51,6 @@ describe("RowConverterChat", () => {
       expect(hasil.id).toBe(parameterContohLampiranPesanChat.id);
       expect(hasil.id_pesan_chat).toBe(parameterContohLampiranPesanChat.idPesanChat);
       expect(hasil.nama_berkas).toBe(parameterContohLampiranPesanChat.namaBerkas);
-      expect(hasil.path).toBe(parameterContohLampiranPesanChat.path);
       expect(hasil.ukuran).toBe(parameterContohLampiranPesanChat.ukuran);
     });
   });

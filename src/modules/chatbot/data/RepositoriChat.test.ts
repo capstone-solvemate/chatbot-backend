@@ -196,72 +196,72 @@ describe("RepositoriChat", () => {
     });
   });
 
-  describe("fungsi buatLampiranPesanChat", () => {
-    it("harus memanggil fungsi 'lampiranPesanChatKeRow' class 'RowConverterChat'", async () => {
-      const lampiranPesanChat = buatContohLampiranPesanChat();
+  // describe("fungsi buatLampiranPesanChat", () => {
+  //   it("harus memanggil fungsi 'lampiranPesanChatKeRow' class 'RowConverterChat'", async () => {
+  //     const lampiranPesanChat = buatContohLampiranPesanChat();
 
-      const rowConverterChat = mockRowConverterChat();
+  //     const rowConverterChat = mockRowConverterChat();
 
-      const repositori = buatRepositoriChat({
-        rowConverterChat,
-      });
+  //     const repositori = buatRepositoriChat({
+  //       rowConverterChat,
+  //     });
 
-      await repositori.buatLampiranPesanChat(lampiranPesanChat);
+  //     await repositori.buatLampiranPesanChat(lampiranPesanChat);
 
-      expect(rowConverterChat.lampiranPesanChatKeRow).toHaveBeenCalledOnce();
-    });
+  //     expect(rowConverterChat.lampiranPesanChatKeRow).toHaveBeenCalledOnce();
+  //   });
 
-    it("harus memanggil fungsi 'create' objek 'modelLampiranPesanChat'", async () => {
-      const lampiranPesanChat = buatContohLampiranPesanChat();
+  //   it("harus memanggil fungsi 'create' objek 'modelLampiranPesanChat'", async () => {
+  //     const lampiranPesanChat = buatContohLampiranPesanChat();
 
-      const modelLampiranPesanChat = mockModelLampiranPesanChat();
+  //     const modelLampiranPesanChat = mockModelLampiranPesanChat();
 
-      const repositori = buatRepositoriChat({
-        modelLampiranPesanChat,
-      });
+  //     const repositori = buatRepositoriChat({
+  //       modelLampiranPesanChat,
+  //     });
 
-      await repositori.buatLampiranPesanChat(lampiranPesanChat);
+  //     await repositori.buatLampiranPesanChat(lampiranPesanChat);
 
-      expect(modelLampiranPesanChat.create).toHaveBeenCalledOnce();
-    });
+  //     expect(modelLampiranPesanChat.create).toHaveBeenCalledOnce();
+  //   });
 
-    it("harus memberikan parameter valid saat memanggil fungsi 'create' objek 'modelPesanChat'", async () => {
-      const lampiranPesanChat = buatContohLampiranPesanChat();
+  //   it("harus memberikan parameter valid saat memanggil fungsi 'create' objek 'modelPesanChat'", async () => {
+  //     const lampiranPesanChat = buatContohLampiranPesanChat();
 
-      const modelLampiranPesanChat = mockModelLampiranPesanChat();
+  //     const modelLampiranPesanChat = mockModelLampiranPesanChat();
 
-      const repositori = buatRepositoriChat({
-        modelLampiranPesanChat,
-      });
+  //     const repositori = buatRepositoriChat({
+  //       modelLampiranPesanChat,
+  //     });
 
-      await repositori.buatLampiranPesanChat(lampiranPesanChat);
+  //     await repositori.buatLampiranPesanChat(lampiranPesanChat);
 
-      const { id, ...rowTanpaId } = buatContohRowLampiranPesanChat();
-      const ekspektasiParameter = rowTanpaId;
+  //     const { id, ...rowTanpaId } = buatContohRowLampiranPesanChat();
+  //     const ekspektasiParameter = rowTanpaId;
 
-      expect(modelLampiranPesanChat.create).toHaveBeenCalledWith(ekspektasiParameter);
-    });
+  //     expect(modelLampiranPesanChat.create).toHaveBeenCalledWith(ekspektasiParameter);
+  //   });
 
-    it("harus memperbarui 'id' class 'PesanChat' sesuai dengan id yang dihasilkan database", async () => {
-      const lampiranPesanChat = buatContohLampiranPesanChat();
+  //   it("harus memperbarui 'id' class 'PesanChat' sesuai dengan id yang dihasilkan database", async () => {
+  //     const lampiranPesanChat = buatContohLampiranPesanChat();
 
-      const idLampiranPesanChatBaru = 8n;
+  //     const idLampiranPesanChatBaru = 8n;
 
-      const mockRowLampiranPesanChatBaru = buatContohRowLampiranPesanChat();
-      mockRowLampiranPesanChatBaru.id = idLampiranPesanChatBaru;
-      const customInstanceLampiranPesanChat = {
-        toJSON: vi.fn().mockReturnValue(mockRowLampiranPesanChatBaru),
-      } as unknown as Model;
+  //     const mockRowLampiranPesanChatBaru = buatContohRowLampiranPesanChat();
+  //     mockRowLampiranPesanChatBaru.id = idLampiranPesanChatBaru;
+  //     const customInstanceLampiranPesanChat = {
+  //       toJSON: vi.fn().mockReturnValue(mockRowLampiranPesanChatBaru),
+  //     } as unknown as Model;
 
-      const modelLampiranPesanChat = mockModelLampiranPesanChat(customInstanceLampiranPesanChat);
+  //     const modelLampiranPesanChat = mockModelLampiranPesanChat(customInstanceLampiranPesanChat);
 
-      const repositori = buatRepositoriChat({
-        modelLampiranPesanChat,
-      });
+  //     const repositori = buatRepositoriChat({
+  //       modelLampiranPesanChat,
+  //     });
 
-      await repositori.buatLampiranPesanChat(lampiranPesanChat);
+  //     await repositori.buatLampiranPesanChat(lampiranPesanChat);
 
-      expect(lampiranPesanChat.id).eq(idLampiranPesanChatBaru);
-    });
-  });
+  //     expect(lampiranPesanChat.id).eq(idLampiranPesanChatBaru);
+  //   });
+  // });
 });

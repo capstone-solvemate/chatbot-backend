@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
 import type WebSocket from "ws";
 
+import type { WsContext } from "~/core/api/ws/types/WsContext.js";
+
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
 import type { JenisPesan } from "../../upload/domain/Lampiran.js";
-import type { ChatWsManager } from "../api/ws/ChatWsManager.js";
+import type { ManajerWsChat } from "../api/ws/ManajerWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
@@ -12,8 +14,10 @@ import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import { Chat } from "../domain/Chat.js";
 import { validasiBalasChat, validasiPertanyaan } from "../domain/Dto.js";
+import { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 import { validasiBuatChatDto } from "./dto/BuatChatDto.js";
+import { validasiDimensiGambar } from "./dto/ValidatorUploadGambar.js";
 
 /**
  * Menyimpan file-file dari req.files ke DB, langsung diasosiasikan ke idPesan.
@@ -52,7 +56,7 @@ async function simpanFileDariRequest(
 export class KontrolChat {
   constructor(
     private readonly repositoriChat: RepositoriChat,
-    private readonly chatWsManager: ChatWsManager,
+    private readonly manajerWsChat: ManajerWsChat,
     private readonly ragWorkerClient: RagWorkerClient,
     private readonly chatEventBus: ChatEventBus,
     private readonly repositoriLampiran: RepositoriLampiran,
@@ -82,6 +86,12 @@ export class KontrolChat {
 
   async buatChat(req: Request, res: Response): Promise<void> {
     const dto = validasiBuatChatDto(req);
+
+    const files = (req.files ?? []) as Express.Multer.File[];
+    for (let i = 0; i < files.length; i++) {
+      await validasiDimensiGambar(files[i], i);
+    }
+
     const idPembuat = req.sesiPengguna!.idPengguna!;
 
     const subjekChat = dto.pesan.length > 50
@@ -92,6 +102,17 @@ export class KontrolChat {
 
     const pesanChatKaryawan = new PesanChat(0n, chat.id, dto.pesan, chat.tanggalDibuat, false, false);
     await this.repositoriChat.buatPesanChat(pesanChatKaryawan);
+
+    for (const file of files) {
+      const lampiranPesanChat = new LampiranPesanChat(
+        0n,
+        pesanChatKaryawan.id,
+        file.originalname,
+        BigInt(file.size),
+      );
+
+      await this.repositoriChat.buatLampiranPesanChat(lampiranPesanChat, file);
+    }
 
     // Simpan lampiran langsung dari form-data (jika ada)
     // const lampiran = await simpanFileDariRequest(
@@ -253,5 +274,11 @@ export class KontrolChat {
       );
       this.chatWsManager.hapus(koneksi);
     });
+  }
+
+  async listenPesanChatBaru(ws: WebSocket, idSession: string): Promise<string> {
+    const koneksiWs = new KoneksiWsChat(ws, null, idSession);
+    const idKoneksi = this.manajerWsChat.tambahKoneksiPesanBaru(koneksiWs);
+    return idKoneksi;
   }
 }
