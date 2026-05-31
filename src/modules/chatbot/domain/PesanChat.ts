@@ -1,3 +1,5 @@
+import type { LampiranPesanChat } from "./LampiranPesanChat.js";
+
 export class PesanChat {
   constructor(
     public id: bigint,
@@ -6,5 +8,10 @@ export class PesanChat {
     public readonly tanggalDibuat: Date,
     public readonly chatAsisten: boolean,
     public readonly gagal: boolean,
+    public readonly lampiran: LampiranPesanChat[] = [],
   ) {}
+
+  tambahLampiran(pLampiran: LampiranPesanChat) {
+    this.lampiran.push(pLampiran);
+  }
 }

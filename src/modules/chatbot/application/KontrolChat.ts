@@ -85,7 +85,7 @@ export class KontrolChat {
   async buatChat(req: Request, res: Response): Promise<void> {
     const dto = validasiBuatChatDto(req);
 
-    const files = (req.files ?? []) as Express.Multer.File[];
+    const lampiran = (req.files ?? []) as Express.Multer.File[];
     for (let i = 0; i < files.length; i++) {
       await validasiDimensiGambar(files[i], i);
     }
@@ -101,7 +101,9 @@ export class KontrolChat {
     const pesanChatKaryawan = new PesanChat(0n, chat.id, dto.pesan, chat.tanggalDibuat, false, false);
     await this.repositoriChat.buatPesanChat(pesanChatKaryawan);
 
-    for (const file of files) {
+    chat.tambahPesan(pesanChatKaryawan);
+
+    for (const file of lampiran) {
       const lampiranPesanChat = new LampiranPesanChat(
         0n,
         pesanChatKaryawan.id,
@@ -110,16 +112,9 @@ export class KontrolChat {
       );
 
       await this.repositoriChat.buatLampiranPesanChat(lampiranPesanChat, file);
-    }
 
-    // Simpan lampiran langsung dari form-data (jika ada)
-    // const lampiran = await simpanFileDariRequest(
-    //   req,
-    //   idPembuat,
-    //   pesanKaryawan.id,
-    //   "chat",
-    //   this.repositoriLampiran,
-    // );
+      pesanChatKaryawan.tambahLampiran(lampiranPesanChat);
+    }
 
     this.chatEventBus.emit("chat_dibuat", {
       idChat: chat.id,
