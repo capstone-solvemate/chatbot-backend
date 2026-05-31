@@ -7,10 +7,12 @@ import { HelperMulter } from "~/core/file/HelperMulter";
 import { yupErrorToValidationError } from "~/core/types/converters";
 
 const skemaValidasiBuatChat = yup.object({
+  idKoneksiWs: yup.string().required(),
   pesan: yup.string().min(1, "Pesan tidak boleh kosong"),
 });
 
 export type BuatChatDto = {
+  idKoneksiWs: string;
   pesan: string;
   lampiran: Express.Multer.File[];
 };
@@ -28,6 +30,7 @@ export function validasiBuatChatDto(req: Request): BuatChatDto {
   }
 
   return {
+    idKoneksiWs: body.idKoneksiWs,
     pesan: body.pesan,
     lampiran: HelperMulter.ambilFileDariRequest(req),
   };

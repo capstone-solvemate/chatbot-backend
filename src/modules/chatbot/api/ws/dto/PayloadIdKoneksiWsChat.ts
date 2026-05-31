@@ -1,6 +1,5 @@
-import type { TipePayloadWsChat } from "./TipePayloadWsChat.js";
+import type { PayloadWsChat } from "./PayloadWsChat.js";
 
 export type PayloadIdKoneksiWsChat = {
-  tipe: TipePayloadWsChat.IdKoneksi;
   idKoneksi: string;
-};
+} & PayloadWsChat;

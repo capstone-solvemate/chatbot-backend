@@ -38,6 +38,7 @@ function buatKontrolChat(deps: {
 describe("KontrolChat", () => {
   describe("fungsi buatChat", () => {
     const contohBodyBuatChat = {
+      idKoneksiWs: "00000000-0000-0000-0000-000000000002",
       pesan: "how to resolve paper jam?",
     };
 
@@ -112,6 +113,7 @@ describe("KontrolChat", () => {
     it("harus mencantumkan objek Chat dengan subjek yang telah dipotong jika jumlah karakter input melebihi batas pada parameter pemanggilan fungsi 'buatChat' class 'RepositoriChat'", async () => {
       const req = mockExpressRequest({ peranPengguna: PeranPengguna.Karyawan });
       req.body = {
+        idKoneksiWs: contohBodyBuatChat.idKoneksiWs,
         pesan: Array.from({ length: 51 }).fill("b").join(""),
       };
       const res = mockExpressResponse();

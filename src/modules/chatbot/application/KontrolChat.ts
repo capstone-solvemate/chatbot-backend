@@ -9,12 +9,12 @@ import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 
 import { lampiranToDto } from "../../upload/domain/Lampiran.js";
+import { validasiBuatChatDto } from "../api/rest/dto/BuatChatDto.js";
 import { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import { Chat } from "../domain/Chat.js";
 import { validasiBalasChat } from "../domain/Dto.js";
 import { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
 import { PesanChat } from "../domain/PesanChat.js";
-import { validasiBuatChatDto } from "./dto/BuatChatDto.js";
 import { validasiDimensiGambar } from "./dto/ValidatorUploadGambar.js";
 
 /**

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 
 import { WsRouter } from "~/core/api/ws/types/WsRouter";
+import { InjectSesiPenggunaWsForTest } from "~/core/api/ws/types/WsSesiPenggunaInjectorForTest.js";
+import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 import { jalankanWsServerAplikasi } from "~test/stub/WsStub.js";
 
 import type { PayloadIdKoneksiWsChat } from "./dto/PayloadIdKoneksiWsChat.js";
@@ -23,7 +25,7 @@ describe("WsHandlerListenChatBaru", () => {
     );
 
     const router = new WsRouter();
-    router.route("/chat/ws", handler);
+    router.route("/chat/ws", new InjectSesiPenggunaWsForTest(PeranPengguna.Karyawan), handler);
 
     const { restServer, port } = jalankanWsServerAplikasi(router);
 
