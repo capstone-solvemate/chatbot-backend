@@ -40,6 +40,31 @@ export class ManajerWsChat extends ManajerWsWithAuth {
     return idKoneksi;
   }
 
+  setIdChat(idKoneksiWs: string, idSession: string, idChat: bigint) {
+    const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
+    if (koneksi && koneksi.idSession === idSession && koneksi.idChat === null) {
+      koneksi.idChat = idChat;
+
+      if (!this.koneksiByIdChat.get(idChat)) {
+        this.koneksiByIdChat.set(idChat, new Map());
+      }
+      this.koneksiByIdChat.get(idChat)!.set(koneksi.idKoneksi, koneksi);
+    }
+  }
+
+  getKoneksi(idKoneksiWs: string, idSession: string): KoneksiWsChat | null {
+    const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
+    if (!koneksi) {
+      return null;
+    }
+
+    if (koneksi.idSession !== idSession) {
+      return null;
+    }
+
+    return koneksi;
+  }
+
   tambah(koneksi: KoneksiWsChat): void {
     // Index by idChat
     // if (!this.koneksiByChat.has(koneksi.idChat!)) {

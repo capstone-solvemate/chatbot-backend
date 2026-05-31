@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import type WebSocket from "ws";
 
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
-import type { JenisPesan } from "../../upload/domain/Lampiran.js";
+import type { PayloadWsChatBaru } from "../api/ws/dto/PayloadWsChatBaru.js";
 import type { ManajerWsChat } from "../api/ws/ManajerWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
@@ -10,46 +10,13 @@ import type { RagWorkerClient } from "./RagWorkerClient.js";
 
 import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import { validasiBuatChatDto } from "../api/rest/dto/BuatChatDto.js";
+import { chatToPayloadWsChatBaru } from "../api/ws/dto/ConverterPayloadChatBaru.js";
 import { KoneksiWsChat } from "../api/ws/KoneksiWsChat.js";
 import { Chat } from "../domain/Chat.js";
 import { validasiBalasChat } from "../domain/Dto.js";
 import { LampiranPesanChat } from "../domain/LampiranPesanChat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 import { validasiDimensiGambar } from "./dto/ValidatorUploadGambar.js";
-
-/**
- * Menyimpan file-file dari req.files ke DB, langsung diasosiasikan ke idPesan.
- * Mengembalikan daftar lampiran DTO yang sudah tersimpan.
- */
-async function simpanFileDariRequest(
-  req: Request,
-  idPengunggah: number,
-  idPesan: bigint,
-  jenisPesan: JenisPesan,
-  repositoriLampiran: RepositoriLampiran,
-) {
-  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-  if (files.length === 0)
-    return [];
-
-  const hasilSimpan = await Promise.all(
-    files.map(file =>
-      repositoriLampiran.simpan({
-        jenisPesan,
-        idPesan,
-        idPengunggah,
-        namaAsli: file.originalname,
-        namaBerkas: file.filename,
-        path: file.path.replace(/\\/g, "/"),
-        ukuran: file.size,
-        mimeType: file.mimetype,
-        dibuatPada: new Date(),
-      }),
-    ),
-  );
-
-  return hasilSimpan.map(lampiranToDto);
-}
 
 export class KontrolChat {
   constructor(
@@ -86,8 +53,8 @@ export class KontrolChat {
     const dto = validasiBuatChatDto(req);
 
     const lampiran = (req.files ?? []) as Express.Multer.File[];
-    for (let i = 0; i < files.length; i++) {
-      await validasiDimensiGambar(files[i], i);
+    for (let i = 0; i < lampiran.length; i++) {
+      await validasiDimensiGambar(lampiran[i], i);
     }
 
     const idPembuat = req.sesiPengguna!.idPengguna!;
@@ -116,6 +83,15 @@ export class KontrolChat {
       pesanChatKaryawan.tambahLampiran(lampiranPesanChat);
     }
 
+    this.manajerWsChat.setIdChat(dto.idKoneksiWs, req.sesiPengguna!.sessionId, chat.id);
+
+    const koneksiWsChat = this.manajerWsChat.getKoneksi(dto.idKoneksiWs, req.sesiPengguna!.sessionId);
+
+    if (koneksiWsChat) {
+      const payloadChat: PayloadWsChatBaru = chatToPayloadWsChatBaru(chat, koneksiWsChat.idKoneksi);
+      koneksiWsChat.ws.send(JSON.stringify(payloadChat));
+    }
+
     this.chatEventBus.emit("chat_dibuat", {
       idChat: chat.id,
       idPembuat,
@@ -127,9 +103,7 @@ export class KontrolChat {
       { role: "user", content: dto.pesan },
     ]);
 
-    res.status(200).json({
-      idChat: chat.id.toString(),
-    });
+    res.sendStatus(204);
   }
 
   async balasChat(req: Request, res: Response): Promise<void> {

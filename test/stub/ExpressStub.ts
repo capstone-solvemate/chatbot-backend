@@ -32,6 +32,7 @@ export function mockExpressResponse() {
   return ({
     status: vi.fn().mockReturnThis(),
     send: vi.fn().mockReturnThis(),
+    sendStatus: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
   }) as unknown as Response;
 }

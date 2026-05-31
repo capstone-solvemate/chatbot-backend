@@ -8,5 +8,7 @@ export function mockManajerWsChat(ovd: {
 } = {}) {
   return {
     tambahKoneksiPesanBaru: ovd.tambahKoneksiPesanBaru ?? vi.fn().mockReturnValue(""),
+    setIdChat: vi.fn(),
+    getKoneksi: vi.fn().mockReturnValue(null),
   } as unknown as ManajerWsChat;
 }

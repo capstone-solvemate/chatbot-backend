@@ -1,8 +1,9 @@
 import express from "express";
 
+import { routerChatbot } from "~/modules/chatbot/api/rest/RestRoutesChatbot.js";
+
 import type MessageResponse from "../interfaces/message-response.js";
 
-import routerChat from "./chat.js";
 import emojis from "./emojis.js";
 import { routerFaq } from "./endpoints/faq.js";
 import { routerFaqAdmin } from "./endpoints/faqAdmin.js";
@@ -32,7 +33,7 @@ router.use("/tiket", routerTiket);
 router.use("/admin/categories", routerKategoriAdmin);
 router.use("/admin/faqs", routerFaqAdmin);
 router.use("/admin/knowledge-base", routerKnowledgeBase);
-router.use("/chat", routerChat);
+router.use("/chat", routerChatbot);
 router.use("/admin/pengguna", routerPenggunaAdmin);
 
 export default router;
