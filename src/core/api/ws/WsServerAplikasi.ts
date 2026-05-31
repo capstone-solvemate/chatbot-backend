@@ -20,13 +20,13 @@ export class WsServerAplikasi {
   ) {}
 
   jalankan(serverRest: Server): void {
-    // WebSocket server — noServer:true agar tidak membuat HTTP server sendiri
     const wss = new WebSocketServer({ noServer: true });
 
-    // Delegasikan upgrade event ke handler per-route
     serverRest.on("upgrade", (req, socket, head) => {
       this.handleKoneksiWs(wss, req, socket, head);
     });
+
+    console.log("Running websocket server");
   }
 
   private handleKoneksiWs(

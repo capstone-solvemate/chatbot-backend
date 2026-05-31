@@ -1,14 +1,18 @@
+import { DI } from "~/di/DI.js";
+import { WsHandlerListenChatBaru } from "~/modules/chatbot/api/ws/WsHandlerListenChatBaru.js";
 import { PeranPengguna } from "~/modules/pengguna/domain/PeranPengguna.js";
 
 import { authMiddleware } from "./middleware/AuthMiddleware.js";
 import { peranMiddleware } from "./middleware/PeranMiddleware.js";
 import { WsRouter } from "./types/WsRouter.js";
 
-export class WebSocketRouterAplikasi {
+export class WsRouterAplikasi {
   getRouter(): WsRouter {
     const router = new WsRouter();
 
-    router.route("/api/chat/ws", authMiddleware(), peranMiddleware([PeranPengguna.Karyawan]));
+    router.route("/api/ws/chat", authMiddleware(), peranMiddleware([PeranPengguna.Karyawan]), new WsHandlerListenChatBaru(
+      DI.provideKontrolChat(),
+    ));
 
     return router;
   }

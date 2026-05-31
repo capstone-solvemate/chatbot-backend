@@ -16,7 +16,7 @@ class PeranMiddleware extends WsHandler {
   }
 
   async handle(ws: WebSocket, req: IncomingMessage, context: WsContext): Promise<void> {
-    if (!context.sesiPengguna || !context.sesiPengguna.peranPengguna) {
+    if (!context.sesiPengguna || context.sesiPengguna.peranPengguna === null) {
       throw new UnauthenticatedError(UnauthenticatedReason.InvalidToken);
     }
 

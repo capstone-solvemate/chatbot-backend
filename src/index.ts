@@ -1,4 +1,6 @@
 import app from "./app.js";
+import { WsRouterAplikasi } from "./core/api/ws/WsRouterAplikasi.js";
+import { WsServerAplikasi } from "./core/api/ws/WsServerAplikasi.js";
 import { DI } from "./di/DI.js";
 import { env } from "./env.js";
 
@@ -28,6 +30,9 @@ server.on("error", (err) => {
   }
   process.exit(1);
 });
+
+const websocketServer = new WsServerAplikasi(new WsRouterAplikasi().getRouter());
+websocketServer.jalankan(server);
 
 DI.registerWsHandlers();
 DI.provideNotifikasiSubscriber().registerSubscribers();

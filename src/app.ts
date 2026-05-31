@@ -1,8 +1,3 @@
-import type { Buffer } from "node:buffer";
-import type { IncomingMessage } from "node:http";
-import type { Duplex } from "node:stream";
-import type { WebSocketServer } from "ws";
-
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
@@ -12,10 +7,7 @@ import path from "node:path";
 
 import type MessageResponse from "./interfaces/message-response.js";
 
-import { handleChatWsUpgrade } from "./api/chat.js";
-import { handleChatbotMonitoringWsUpgrade, handleDashboardWsUpgrade } from "./api/dashboard.js";
 import api from "./api/index.js";
-import { handleNotifikasiWsUpgrade } from "./api/notifikasi.js";
 import { DI } from "./di/DI.js";
 import * as middlewares from "./middlewares.js";
 import { PeranPengguna } from "./modules/pengguna/domain/PeranPengguna.js";
@@ -79,16 +71,5 @@ app.use("/api", api);
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);
-
-// Pola URL WebSocket yang didukung
-const WS_CHAT_PATTERN = /^\/api\/chat\/(\d+)\/ws$/;
-const WS_NOTIFIKASI_PATTERN = /^\/api\/notifikasi\/ws$/;
-const WS_DASHBOARD_PATTERN = /^\/api\/dashboard\/ws(?:\?.*)?$/;
-const WS_CHATBOT_MONITORING_PATTERN = /^\/api\/dashboard\/chatbot\/ws(?:\?.*)?$/;
-
-/**
- * Dipanggil dari index.ts saat HTTP upgrade event.
- * Routing WS dilakukan di sini berdasarkan URL pattern.
- */
 
 export default app;
