@@ -16,6 +16,7 @@ import type { GetNotifikasiResponseDto } from "./dto/GetNotifikasiResponseDto.js
 import type { KoneksiNotifikasi } from "./KoneksiNotifikasi.js";
 import type { NotifikasiWsManager } from "./NotifikasiWsManager.js";
 
+import { Notifikasi } from "../domain/Notifikasi.js";
 import { NotifikasiTiket } from "../domain/NotifikasiTiket.js";
 import { notifikasiToDto } from "./converters.js";
 
@@ -154,7 +155,7 @@ export class KontrolNotifikasi {
 
   // ─── Private Helpers ──────────────────────────────────────────────────────
 
-  private async simpanDanKirim(notifikasi: NotifikasiTiket): Promise<void> {
+  private async simpanDanKirim(notifikasi: Notifikasi): Promise<void> {
     await this.repositoriNotifikasi.buatNotifikasi(notifikasi);
     this.notifikasiWsManager.kirim(notifikasi.idPengguna, notifikasiToDto(notifikasi));
   }
@@ -273,5 +274,29 @@ export class KontrolNotifikasi {
             `,
       });
     }
+  }
+
+  async tanganiKnowledgeBaseSelesai(judulDokumen: string): Promise<void> {
+    const daftarAdmin = await this.repositoriPengguna.getPenggunaAktifByPeran(PeranPengguna.Admin);
+    const judul = "Pemrosesan Dokumen Selesai";
+    const deskripsi = `Dokumen knowledge base "${judulDokumen}" telah berhasil diproses dan siap digunakan.`;
+
+    await Promise.all(
+      daftarAdmin.map(admin => this.simpanDanKirim(
+        new Notifikasi(0n, admin.id, judul, deskripsi, new Date(), null),
+      )),
+    );
+  }
+
+  async tanganiKnowledgeBaseGagal(judulDokumen: string, errorCode: string): Promise<void> {
+    const daftarAdmin = await this.repositoriPengguna.getPenggunaAktifByPeran(PeranPengguna.Admin);
+    const judul = "Pemrosesan Dokumen Gagal";
+    const deskripsi = `Dokumen knowledge base "${judulDokumen}" gagal diproses. (Error: ${errorCode})`;
+
+    await Promise.all(
+      daftarAdmin.map(admin => this.simpanDanKirim(
+        new Notifikasi(0n, admin.id, judul, deskripsi, new Date(), null),
+      )),
+    );
   }
 }

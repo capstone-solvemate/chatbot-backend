@@ -55,6 +55,37 @@ export class RepositoriKnowledgeBase {
     return deleted > 0;
   }
 
+  async updateDokumen(
+    id: bigint,
+    fields: {
+      judul: string;
+      idKategori: number;
+      docId?: string;
+      namaBerkas?: string;
+      ukuranBerkas?: number;
+      path?: string;
+      status?: StatusKnowledgeBase;
+    },
+  ): Promise<KnowledgeBase | null> {
+    const row: Record<string, any> = {
+      judul: fields.judul,
+      id_kategori: fields.idKategori,
+    };
+
+    if (fields.docId !== undefined) row.doc_id = fields.docId;
+    if (fields.namaBerkas !== undefined) row.nama_berkas = fields.namaBerkas;
+    if (fields.ukuranBerkas !== undefined) row.ukuran_berkas = fields.ukuranBerkas;
+    if (fields.path !== undefined) row.path = fields.path;
+    if (fields.status !== undefined) row.status = statusKnowledgeBaseToInt(fields.status);
+
+    const [updated] = await this.modelKnowledgeBase.update(row, {
+      where: { id: id.toString() },
+    });
+
+    if (updated === 0) return null;
+    return this.getDokumenById(id);
+  }
+
   async updateStatus(id: bigint, status: StatusKnowledgeBase): Promise<boolean> {
     const [updated] = await this.modelKnowledgeBase.update({ status: statusKnowledgeBaseToInt(status) }, {
       where: { id: id.toString() },

@@ -403,6 +403,7 @@ export class DI {
       this.kontrolKnowledgeBase = new KontrolKnowledgeBase(
         this.provideRepositoriKnowledgeBase(),
         this.provideConfig().ragConfig,
+        this.provideKontrolNotifikasi(),
       );
     }
     return this.kontrolKnowledgeBase;

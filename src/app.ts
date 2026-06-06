@@ -16,7 +16,14 @@ const app = express();
 
 app.use(morgan("dev"));
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost",        // Docker (nginx reverse proxy standard)
+    "http://localhost:8080",   // Docker (nginx reverse proxy on port 8080)
+    "http://localhost:5173",   // Local dev (Vite)
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(middlewares.session);

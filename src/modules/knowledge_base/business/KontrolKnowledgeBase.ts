@@ -12,12 +12,14 @@ import type { KnowledgeBaseResponseDto } from "./dto/KnowledgeBaseResponseDto.js
 
 import { StatusKnowledgeBase } from "../domain/StatusKnowledgeBase.js";
 import { toResponseDto } from "./dto/converters.js";
-import { validasiUploadDokumen } from "./dto/validators.js";
+import { validasiEditDokumen, validasiUploadDokumen } from "./dto/validators.js";
+import type { KontrolNotifikasi } from "~/modules/notifikasi/web/business/KontrolNotifikasi.js";
 
 export class KontrolKnowledgeBase {
   constructor(
     private readonly repositori: RepositoriKnowledgeBase,
     private readonly ragConfig: RagConfig,
+    private readonly kontrolNotifikasi: KontrolNotifikasi,
   ) {}
 
   /**
@@ -28,6 +30,7 @@ export class KontrolKnowledgeBase {
    */
   async tanganiPesanWorker(pesan: PesanDariWorker): Promise<void> {
     const idDokumen = BigInt(pesan.idDokumen);
+    const dokumen = await this.repositori.getDokumenById(idDokumen);
 
     switch (pesan.tipe) {
       case "mulai":
@@ -36,6 +39,7 @@ export class KontrolKnowledgeBase {
 
       case "selesai":
         await this.repositori.updateStatus(idDokumen, StatusKnowledgeBase.SelesaiDiproses);
+        if (dokumen) await this.kontrolNotifikasi.tanganiKnowledgeBaseSelesai(dokumen.judul);
         break;
 
       case "gagal":
@@ -44,6 +48,7 @@ export class KontrolKnowledgeBase {
           `[KontrolKnowledgeBase] Indexing gagal. idDokumen=${idDokumen}, errorCode=${pesan.errorCode}`,
         );
         await this.repositori.updateStatus(idDokumen, StatusKnowledgeBase.GagalDiproses);
+        if (dokumen) await this.kontrolNotifikasi.tanganiKnowledgeBaseGagal(dokumen.judul, pesan.errorCode);
         break;
     }
   }
@@ -94,6 +99,97 @@ export class KontrolKnowledgeBase {
       message: "File berhasil diunggah dan masuk antrian pemrosesan",
       dokumen: toResponseDto(dokumen),
     });
+  }
+
+  async editDokumen(req: Request, res: Response): Promise<void> {
+    const id = BigInt(req.params.id);
+    const dto = validasiEditDokumen(req);
+
+    const dokumen = await this.repositori.getDokumenById(id);
+    if (!dokumen) {
+      res.status(404).json({ error: "not_found", message: "Dokumen tidak ditemukan" });
+      return;
+    }
+
+    // Tolak edit jika dokumen sedang dalam antrian atau sedang diproses
+    const statusDitolak = [
+      StatusKnowledgeBase.BelumDiproses,
+      StatusKnowledgeBase.SedangDiproses,
+    ];
+    if (statusDitolak.includes(dokumen.status)) {
+      res.status(409).json({
+        error: "conflict",
+        message: "Dokumen belum atau sedang dalam proses indexing dan tidak dapat diedit.",
+      });
+      return;
+    }
+
+    if (dto.file) {
+      // --- File replacement: delete old RAG vectors, swap file, re-index ---
+
+      // 1. Hapus vektor lama dari RAG (jika sudah pernah diproses)
+      if (dokumen.status === StatusKnowledgeBase.SelesaiDiproses) {
+        await this.hapusDariRag(dokumen.docId);
+      }
+
+      // 2. Hapus file fisik lama
+      try {
+        await fs.unlink(dokumen.path);
+      } catch (fsError) {
+        console.error(
+          new Date().toISOString(),
+          "[KontrolKnowledgeBase] File fisik lama tidak ditemukan atau gagal dihapus:",
+          fsError,
+        );
+      }
+
+      // 3. Update DB dengan docId baru + info file baru
+      const newDocId = uuidv4();
+      const updated = await this.repositori.updateDokumen(id, {
+        judul: dto.judul,
+        idKategori: dto.idKategori,
+        docId: newDocId,
+        namaBerkas: dto.file.originalname,
+        ukuranBerkas: dto.file.size,
+        path: dto.file.path,
+        status: StatusKnowledgeBase.BelumDiproses,
+      });
+
+      if (!updated) {
+        res.status(500).json({ error: "internal_error", message: "Gagal memperbarui dokumen" });
+        return;
+      }
+
+      // 4. Kirim ke worker untuk re-indexing
+      const { DI } = await import("~/di/DI.js");
+      DI.provideKnowledgeBaseWorkerClient().proses({
+        idDokumen: updated.id,
+        docId: newDocId,
+        namaBerkas: updated.namaBerkas,
+        path: updated.path,
+      });
+
+      res.status(200).json({
+        message: "Dokumen berhasil diperbarui dan masuk antrian pemrosesan ulang",
+        dokumen: toResponseDto(updated),
+      });
+    } else {
+      // --- Metadata-only update ---
+      const updated = await this.repositori.updateDokumen(id, {
+        judul: dto.judul,
+        idKategori: dto.idKategori,
+      });
+
+      if (!updated) {
+        res.status(500).json({ error: "internal_error", message: "Gagal memperbarui dokumen" });
+        return;
+      }
+
+      res.status(200).json({
+        message: "Metadata dokumen berhasil diperbarui",
+        dokumen: toResponseDto(updated),
+      });
+    }
   }
 
   async hapusDokumen(req: Request, res: Response): Promise<void> {

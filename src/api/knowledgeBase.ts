@@ -169,6 +169,65 @@ router.post("/upload", auth([PeranPengguna.Admin]), upload.single("file"), (req,
 /**
  * @swagger
  * /api/admin/knowledge-base/{id}:
+ *   put:
+ *     summary: Edit dokumen knowledge base (metadata dan/atau file)
+ *     tags: [Knowledge Base]
+ *     security:
+ *       - csrfAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID dokumen yang akan diedit
+ *         example: "1"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - judul
+ *               - idKategori
+ *             properties:
+ *               judul:
+ *                 type: string
+ *                 description: Judul dokumen
+ *               idKategori:
+ *                 type: integer
+ *                 description: ID kategori dokumen
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: File pengganti (opsional, maks. 10MB)
+ *     responses:
+ *       200:
+ *         description: Dokumen berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 dokumen:
+ *                   $ref: '#/components/schemas/DokumenKB'
+ *       404:
+ *         description: Dokumen tidak ditemukan
+ *       409:
+ *         description: Dokumen sedang dalam proses indexing
+ *       422:
+ *         description: Validasi gagal
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/:id", auth([PeranPengguna.Admin]), upload.single("file"), (req, res, next) => kontrol.editDokumen(req, res).catch(next));
+
+/**
+ * @swagger
+ * /api/admin/knowledge-base/{id}:
  *   delete:
  *     summary: Hapus dokumen knowledge base berdasarkan ID
  *     tags: [Knowledge Base]

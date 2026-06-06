@@ -6,6 +6,7 @@ import { yupErrorToValidationError } from "~/core/types/converters.js";
 import { createEmptyFieldError, ValidationError } from "~/core/types/ValidationError.js";
 
 import { UploadDokumenDto } from "./UploadDokumenDto.js";
+import { EditDokumenDto } from "./EditDokumenDto.js";
 
 const uploadDokumenSchema = yup.object({
   judul: yup.string().required().min(1),
@@ -38,3 +39,27 @@ export function validasiUploadDokumen(req: Request): UploadDokumenDto {
     req.file,
   );
 }
+
+export function validasiEditDokumen(req: Request): EditDokumenDto {
+  const body = {
+    ...req.body,
+    idKategori: req.body.idKategori !== undefined ? Number(req.body.idKategori) : undefined,
+  };
+
+  try {
+    uploadDokumenSchema.validateSync(body, { abortEarly: false });
+  }
+  catch (e: any) {
+    if (e instanceof yup.ValidationError) {
+      throw yupErrorToValidationError(e);
+    }
+    throw e;
+  }
+
+  return new EditDokumenDto(
+    body.judul.trim(),
+    Number.parseInt(body.idKategori),
+    req.file ?? null,
+  );
+}
+
