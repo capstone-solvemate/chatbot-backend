@@ -1,5 +1,6 @@
 import type { WsErrorResponse } from "~/core/api/ws/dto/WsErrorResponse";
 
+import { DataNotFoundError } from "~/core/types/DataNotFoundError.js";
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "~/core/types/UnauthenticatedError";
 
@@ -22,6 +23,15 @@ export function errorToWsError(err: any): { status: number; error: WsErrorRespon
       error: {
         error: ApiErrorCodes.Forbidden,
         message: "you don't have permission to access this resource.",
+      },
+    };
+  }
+  else if (err instanceof DataNotFoundError) {
+    return {
+      status: WsErrorStatus.NotFound,
+      error: {
+        error: ApiErrorCodes.DataNotFound,
+        message: err.message,
       },
     };
   }
