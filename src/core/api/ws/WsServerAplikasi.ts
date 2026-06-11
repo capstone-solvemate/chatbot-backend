@@ -5,15 +5,14 @@ import type { WebSocket } from "ws";
 
 import { WebSocketServer } from "ws";
 
+import { handleChatbotMonitoringWsUpgrade, handleDashboardWsUpgrade } from "~/api/dashboard.js";
+import { handleNotifikasiWsUpgrade } from "~/api/notifikasi.js";
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { UnauthenticatedError, UnauthenticatedReason } from "~/core/types/UnauthenticatedError.js";
 
 import type { WsErrorResponse } from "./dto/WsErrorResponse.js";
 import type { WsContext } from "./types/WsContext.js";
 import type { WsRouter } from "./types/WsRouter.js";
-
-import { handleNotifikasiWsUpgrade } from "~/api/notifikasi.js";
-import { handleDashboardWsUpgrade, handleChatbotMonitoringWsUpgrade } from "~/api/dashboard.js";
 
 import { ApiErrorCodes } from "../ApiErrorCodes.js";
 
@@ -77,8 +76,11 @@ export class WsServerAplikasi {
 
     wss.handleUpgrade(req, socket, head, (ws) => {
       for (const route of this.router.getRoutes()) {
+        // remove query
+        const urlWithoutQuery = (req.url ?? "").split("?")[0];
+
         const pattern = new RegExp(`^${route.path}$`, "i");
-        if (!pattern.test(pathname)) {
+        if (!pattern.test(urlWithoutQuery)) {
           continue;
         }
 
@@ -133,56 +135,6 @@ export class WsServerAplikasi {
       });
     }
   }
-
-  //   const url = req.url ?? "";
-
-  //   const matchNotifikasi = WS_NOTIFIKASI_PATTERN.exec(url);
-  //   if (matchNotifikasi) {
-  //     wss.handleUpgrade(req, socket, head, (ws) => {
-  //       handleNotifikasiWsUpgrade(ws, req).catch((err) => {
-  //         console.error(new Date().toISOString(), "[WS] Notifikasi upgrade error:", err);
-  //         ws.close(4500, "Internal server error");
-  //       });
-  //     });
-  //     return;
-  //   }
-
-  //   const matchChat = WS_CHAT_PATTERN.exec(url);
-  //   if (matchChat) {
-  //     const idChat = BigInt(matchChat[1]);
-  //     wss.handleUpgrade(req, socket, head, (ws) => {
-  //       handleChatWsUpgrade(ws, req, idChat).catch((err) => {
-  //         console.error(new Date().toISOString(), "[WS] Upgrade error:", err);
-  //         ws.close(4500, "Internal server error");
-  //       });
-  //     });
-  //     return;
-  //   }
-
-  //   const matchDashboard = WS_DASHBOARD_PATTERN.exec(url);
-  //   if (matchDashboard) {
-  //     wss.handleUpgrade(req, socket, head, (ws) => {
-  //       handleDashboardWsUpgrade(ws, req).catch((err) => {
-  //         console.error(new Date().toISOString(), "[WS] Dashboard upgrade error:", err);
-  //         ws.close(4500, "Internal server error");
-  //       });
-  //     });
-  //     return;
-  //   }
-
-  //   const matchChatbotMonitoring = WS_CHATBOT_MONITORING_PATTERN.exec(url);
-  //   if (matchChatbotMonitoring) {
-  //     wss.handleUpgrade(req, socket, head, (ws) => {
-  //       handleChatbotMonitoringWsUpgrade(ws, req).catch((err) => {
-  //         console.error(new Date().toISOString(), "[WS] Chatbot monitoring upgrade error:", err);
-  //         ws.close(4500, "Internal server error");
-  //       });
-  //     });
-  //     return;
-  //   }
-
-  //   // Tidak ada route yang cocok — tolak koneksi
-  //   socket.destroy();
 
   private kirimResponseError(ws: WebSocket, code: number, response: WsErrorResponse) {
     ws.close(code, JSON.stringify(response));
