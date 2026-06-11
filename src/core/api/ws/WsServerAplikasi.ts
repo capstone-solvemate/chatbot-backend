@@ -7,14 +7,13 @@ import { WebSocketServer } from "ws";
 
 import { handleChatbotMonitoringWsUpgrade, handleDashboardWsUpgrade } from "~/api/dashboard.js";
 import { handleNotifikasiWsUpgrade } from "~/api/notifikasi.js";
-import { ForbiddenError } from "~/core/types/ForbiddenError.js";
-import { UnauthenticatedError, UnauthenticatedReason } from "~/core/types/UnauthenticatedError.js";
 
 import type { WsErrorResponse } from "./dto/WsErrorResponse.js";
 import type { WsContext } from "./types/WsContext.js";
 import type { WsRouter } from "./types/WsRouter.js";
 
 import { ApiErrorCodes } from "../ApiErrorCodes.js";
+import { errorToWsError } from "./WsErrorConverter.js";
 
 export class WsServerAplikasi {
   constructor(
@@ -115,25 +114,8 @@ export class WsServerAplikasi {
   }
 
   private handleError(ws: WebSocket, err: any) {
-    if (err instanceof UnauthenticatedError) {
-      this.kirimResponseError(ws, 4401, {
-        error: ApiErrorCodes.Unauthenticated,
-        message: err.reason === UnauthenticatedReason.InvalidToken ? "invalid token" : "unauthenticated",
-      });
-    }
-    else if (err instanceof ForbiddenError) {
-      this.kirimResponseError(ws, 4403, {
-        error: ApiErrorCodes.Forbidden,
-        message: "you don't have permission to access this resource.",
-      });
-    }
-    else {
-      console.error(err);
-      this.kirimResponseError(ws, 4500, {
-        error: ApiErrorCodes.ServerError,
-        message: "internal server error",
-      });
-    }
+    const { status, error } = errorToWsError(err);
+    this.kirimResponseError(ws, status, error);
   }
 
   private kirimResponseError(ws: WebSocket, code: number, response: WsErrorResponse) {
