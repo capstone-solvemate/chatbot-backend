@@ -10,16 +10,20 @@ import { ApiErrorCodes } from "~/core/api/ApiErrorCodes.js";
 import { ManajerWsWithAuth } from "~/core/api/ws/types/ManajerWsWithAuth.js";
 import { errorToWsError } from "~/core/api/ws/WsErrorConverter.js";
 import { TestGuard } from "~/core/test/TestGuard.js";
+import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 
 import type { KontrolChat } from "../../application/KontrolChat.js";
+import type { Chat } from "../../domain/Chat.js";
 import type { PesanChat } from "../../domain/PesanChat.js";
 import type { PayloadWsBuatChat } from "./dto/PayloadWsBuatChat.js";
+import type { PayloadWsChatBaru } from "./dto/PayloadWsChatBaru.js";
 import type { PayloadWsChatError } from "./dto/PayloadWsChatError.js";
 import type { PayloadWsChatReady } from "./dto/PayloadWsChatReady.js";
 import type { PayloadWsChatUpdate } from "./dto/PayloadWsChatUpdate.js";
 import type { PayloadWsPesanChatLama } from "./dto/PayloadWsPesanChatLama.js";
 
 import { validasiBalasChat } from "../../domain/Dto.js";
+import { chatToPayloadWsChatBaru } from "./dto/ConverterPayloadChatBaru.js";
 import { pesanChatToPayloadWsObjekPesanChat } from "./dto/ConverterPayloadWsObjekPesanChat.js";
 import { daftarPesanChatToPayloadWsPesanChatLama } from "./dto/ConverterWsPesanChatLama.js";
 import { TipePayloadWsChat } from "./dto/TipePayloadWsChat.js";
@@ -87,8 +91,35 @@ export class ManajerWsChat extends ManajerWsWithAuth {
     ws.send(JSON.stringify(payload));
   }
 
+  handleChatBaru(chat: Chat, ws: WebSocket) {
+    const payloadChat: PayloadWsChatBaru = chatToPayloadWsChatBaru(chat);
+    ws.send(JSON.stringify(payloadChat));
+  }
+
+  async handleBuatChat(payload: PayloadWsBuatChat, koneksiWs: KoneksiWsChat) {
+    try {
+      if (koneksiWs.idChat !== null) {
+        throw new ForbiddenError();
+      }
+      validasiBalasChat(payload);
+      await this.kontrolChat.buatChat(koneksiWs.idKoneksi, koneksiWs.idPengguna, payload.pesan, payload.daftarLampiran);
+    }
+    catch (e) {
+      const { error } = errorToWsError(e);
+      const payload: PayloadWsChatError = {
+        tipe: TipePayloadWsChat.Error,
+        error: error.error,
+        message: error.message,
+      };
+      koneksiWs.ws.send(JSON.stringify(payload));
+    }
+  }
+
   async handleBuatPesanChat(payload: PayloadWsBuatChat, koneksiWs: KoneksiWsChat) {
     try {
+      if (koneksiWs.idChat === null) {
+        throw new ForbiddenError();
+      }
       validasiBalasChat(payload as PayloadWsBuatChat);
       await this.kontrolChat.balasChat(koneksiWs.idChat!, koneksiWs.idPengguna, payload.pesan, payload.daftarLampiran);
     }
@@ -128,8 +159,42 @@ export class ManajerWsChat extends ManajerWsWithAuth {
       case TipePayloadWsChat.BuatPesan:
         await this.handleBuatPesanChat(payload as PayloadWsBuatChat, koneksiWs);
         break;
+      case TipePayloadWsChat.BuatChat:
+        await this.handleBuatChat(payload as PayloadWsBuatChat, koneksiWs);
+        break;
       default:
         console.warn("cannot understand client chat websocket message");
+    }
+  }
+
+  async listenChatBaru(ws: WebSocket, wsContext: WsContext) {
+    try {
+      const idListener = await this.kontrolChat.listenChatBaru(
+        chat => this.handleChatBaru(chat, ws),
+        (sedangDiproses, dialihkanKeTiket, daftarPesan) => this.handleChatUpdate(
+          "0",
+          sedangDiproses,
+          dialihkanKeTiket,
+          daftarPesan,
+          ws,
+        ),
+      );
+
+      const koneksiWs = new KoneksiWsChat(ws, null, wsContext.sesiPengguna!.sessionId!, wsContext.sesiPengguna!.idPengguna!, idListener);
+      this.tambahKoneksi(koneksiWs);
+
+      ws.on("close", () => {
+        this.kontrolChat.unlistenChat(idListener);
+      });
+      ws.on("message", (message) => {
+        this.handlePesanClient(JSON.parse(message.toString()), koneksiWs);
+      });
+
+      this.kirimPesanServerReady(ws);
+    }
+    catch (e: any) {
+      const { status, error } = errorToWsError(e);
+      ws.close(status, JSON.stringify(error));
     }
   }
 
@@ -163,31 +228,6 @@ export class ManajerWsChat extends ManajerWsWithAuth {
       const { status, error } = errorToWsError(e);
       ws.close(status, JSON.stringify(error));
     }
-  }
-
-  setIdChat(idKoneksiWs: string, idSession: string, idChat: bigint) {
-    // const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
-    // if (koneksi && koneksi.idSession === idSession && koneksi.idChat === null) {
-    //   koneksi.idChat = idChat;
-
-    //   if (!this.koneksiByIdChat.get(idChat)) {
-    //     this.koneksiByIdChat.set(idChat, new Map());
-    //   }
-    //   this.koneksiByIdChat.get(idChat)!.set(koneksi.idKoneksi, koneksi);
-    // }
-  }
-
-  getKoneksi(idKoneksiWs: string, idSession: string): KoneksiWsChat | null {
-    const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
-    if (!koneksi) {
-      return null;
-    }
-
-    if (koneksi.idSession !== idSession) {
-      return null;
-    }
-
-    return koneksi;
   }
 
   hapusByIdSession(idSession: string) {

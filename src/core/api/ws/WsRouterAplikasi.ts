@@ -16,7 +16,7 @@ export class WsRouterAplikasi {
     ));
 
     router.route("/api/ws/chat", authMiddleware(), peranMiddleware([PeranPengguna.Karyawan]), new WsHandlerListenChatBaru(
-      DI.provideKontrolChat(),
+      DI.provideManajerWsChat(),
     ));
 
     return router;

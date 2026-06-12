@@ -21,7 +21,7 @@ export class RepositoriChat {
   async buatChat(chat: Chat): Promise<void> {
     const { id, ...row } = this.rowConverterChat.chatKeRow(chat);
     const { id: idBaru } = (await this.modelChat.create(row)).toJSON();
-    chat.id = idBaru;
+    chat.id = BigInt(idBaru);
   }
 
   async getChatById(id: bigint): Promise<Chat | null> {
@@ -135,7 +135,7 @@ export class RepositoriChat {
   async buatPesanChat(pesanChat: PesanChat): Promise<void> {
     const { id, ...rowPesanChatTanpaId } = this.rowConverterChat.pesanChatKeRow(pesanChat);
     const { id: idPesanChatBaru } = (await this.modelPesanChat.create(rowPesanChatTanpaId)).toJSON();
-    pesanChat.id = idPesanChatBaru;
+    pesanChat.id = BigInt(idPesanChatBaru);
   }
 
   async getHistoriPesan(idChat: bigint): Promise<PesanChat[]> {
@@ -149,7 +149,7 @@ export class RepositoriChat {
   async buatLampiranPesanChat(lampiranPesanChat: LampiranPesanChat, file: Express.Multer.File): Promise<void> {
     const { id, ...rowLampiranTanpaId } = this.rowConverterChat.lampiranPesanChatKeRow(lampiranPesanChat);
     const { id: idBaru } = (await this.modelLampiranPesanChat.create(rowLampiranTanpaId)).toJSON();
-    lampiranPesanChat.id = idBaru;
+    lampiranPesanChat.id = BigInt(idBaru);
 
     // Pastikan direktori sudah ada
     await fs.mkdir(path.dirname(lampiranPesanChat.path), { recursive: true });

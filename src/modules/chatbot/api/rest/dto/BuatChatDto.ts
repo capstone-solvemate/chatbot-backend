@@ -1,9 +1,6 @@
-import type { Request } from "express";
-
 import * as yup from "yup";
 import { ValidationError as YupError } from "yup";
 
-import { HelperMulter } from "~/core/file/HelperMulter";
 import { yupErrorToValidationError } from "~/core/types/converters";
 
 const skemaValidasiBuatChat = yup.object({
@@ -15,20 +12,13 @@ export type BuatChatDto = {
   lampiran: Express.Multer.File[];
 };
 
-export function validasiBuatChatDto(req: Request): BuatChatDto {
-  const body = req.body;
-
+export function validasiBuatChatDto(payload: Record<string, any>): void {
   try {
-    skemaValidasiBuatChat.validateSync(body, { abortEarly: false });
+    skemaValidasiBuatChat.validateSync(payload, { abortEarly: false });
   }
   catch (e) {
     if (e instanceof YupError)
       throw yupErrorToValidationError(e);
     throw e;
   }
-
-  return {
-    pesan: body.pesan,
-    lampiran: HelperMulter.ambilFileDariRequest(req),
-  };
 }

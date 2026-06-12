@@ -8,15 +8,12 @@ import { DataNotFoundError } from "~/core/types/DataNotFoundError.js";
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
-import type { PayloadWsBuatChat } from "../api/ws/dto/PayloadWsBuatChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { ChatEventBus } from "../event/ChatEventBus.js";
 import type { ChatListener } from "./ChatListener.js";
 import type { RagWorkerClient } from "./RagWorkerClient.js";
 
 import { lampiranToDto } from "../../upload/domain/Lampiran.js";
-import { chatToPayloadWsChatBaru } from "../api/ws/dto/ConverterPayloadChatBaru.js";
-import { chatToPayloadWsChatUpdate } from "../api/ws/dto/ConverterPayloadChatUpdate.js";
 import { Chat, CHAT_ENTITY_NAME } from "../domain/Chat.js";
 import { PesanChat } from "../domain/PesanChat.js";
 
@@ -57,26 +54,34 @@ export class KontrolChat {
       });
   }
 
-  async buatChat(payload: PayloadWsBuatChat, idPengguna: number, ws: WebSocket): Promise<void> {
-    // const dto = validasiBuatChatDto(req);
+  private setIdChatListener(idListener: string, idChat: bigint) {
+    const listener = this.daftarChatListener.get(idListener);
+    if (listener) {
+      listener.idChat = idChat;
 
+      if (!this.daftarChatListenerByIdChat.get(idChat)) {
+        this.daftarChatListenerByIdChat.set(idChat, new Map());
+      }
+      this.daftarChatListenerByIdChat.get(idChat)!.set(idListener, listener);
+    }
+  }
+
+  async buatChat(idListener: string, idPengguna: number, pesan: string, daftarLampiran: string[]): Promise<void> {
     // const daftarLampiran = payload.daftarLampiran;
     // for (let i = 0; i < lampiran.length; i++) {
     //   await validasiDimensiGambar(lampiran[i], i);
     // }
 
-    // const idPembuat = req.sesiPengguna!.idPengguna!;
+    const subjekChat = pesan.length > 50
+      ? `${pesan.substring(0, 47)}...`
+      : pesan;
+    const chat = new Chat(0n, idPengguna, new Date(), subjekChat, true, false);
+    await this.repositoriChat.buatChat(chat);
 
-    // const subjekChat = dto.pesan.length > 50
-    //   ? `${dto.pesan.substring(0, 47)}...`
-    //   : dto.pesan;
-    // const chat = new Chat(0n, idPembuat, new Date(), subjekChat, true, false);
-    // await this.repositoriChat.buatChat(chat);
+    const pesanChatKaryawan = new PesanChat(0n, chat.id, pesan, chat.tanggalDibuat, false, false);
+    await this.repositoriChat.buatPesanChat(pesanChatKaryawan);
 
-    // const pesanChatKaryawan = new PesanChat(0n, chat.id, dto.pesan, chat.tanggalDibuat, false, false);
-    // await this.repositoriChat.buatPesanChat(pesanChatKaryawan);
-
-    // chat.tambahPesan(pesanChatKaryawan);
+    chat.tambahPesan(pesanChatKaryawan);
 
     // for (const file of lampiran) {
     //   const lampiranPesanChat = new LampiranPesanChat(
@@ -91,33 +96,23 @@ export class KontrolChat {
     //   pesanChatKaryawan.tambahLampiran(lampiranPesanChat);
     // }
 
-    // this.manajerWsChat.setIdChat(dto.idKoneksiWs, req.sesiPengguna!.sessionId, chat.id);
+    this.setIdChatListener(idListener, chat.id);
 
-    // const koneksiWsChat = this.manajerWsChat.getKoneksi(dto.idKoneksiWs, req.sesiPengguna!.sessionId);
+    this.chatEventBus.emit("chat_dibuat", {
+      idChat: chat.id,
+      idPembuat: idPengguna,
+      subjek: chat.subjek,
+      tanggalDibuat: chat.tanggalDibuat,
+    });
 
-    // if (koneksiWsChat) {
-    //   const payloadChat: PayloadWsChatBaru = chatToPayloadWsChatBaru(chat, koneksiWsChat.idKoneksi);
-    //   koneksiWsChat.ws.send(JSON.stringify(payloadChat));
-    // }
+    const listener = this.daftarChatListener.get(idListener);
+    if (listener) {
+      listener.onChatBaru(chat);
+    }
 
-    // this.chatEventBus.emit("chat_dibuat", {
-    //   idChat: chat.id,
-    //   idPembuat,
-    //   subjek: chat.subjek,
-    //   tanggalDibuat: chat.tanggalDibuat,
-    // });
-
-    // this.ragWorkerClient.tambahTugas(chat.id, [
-    //   { role: "user", content: dto.pesan },
-    // ]);
-
-    await new Promise<void>(resolve => setTimeout(resolve, 2000));
-    const dummyChat = new Chat(100n, idPengguna, new Date(), payload.pesan, true, false, [new PesanChat(2n, 1n, payload.pesan, new Date(), false, false, [])]);
-    ws.send(JSON.stringify(chatToPayloadWsChatBaru(dummyChat)));
-
-    await new Promise<void>(resolve => setTimeout(resolve, 2000));
-    const dummyChat2 = new Chat(100n, idPengguna, new Date(), payload.pesan, false, false, [new PesanChat(3n, 1n, payload.pesan, new Date(), true, false, [])]);
-    ws.send(JSON.stringify(chatToPayloadWsChatUpdate(dummyChat2)));
+    this.ragWorkerClient.tambahTugas(chat.id, [
+      { role: "user", content: pesan },
+    ]);
   }
 
   async balasChat(idChat: bigint, idPengguna: number, pesan: string, daftarLampiran: string[]): Promise<void> {
@@ -304,11 +299,15 @@ export class KontrolChat {
     return await this.repositoriChat.getHistoriPesan(idChat);
   }
 
-  async listenPesanChatBaru(ws: WebSocket, idSession: string, idPengguna: number): Promise<string> {
-    // const koneksiWs = new KoneksiWsChat(ws, null, idSession, idPengguna, async payload => await this.buatChat(payload, idPengguna, ws));
-    // const idKoneksi = this.manajerWsChat.tambahKoneksiPesanBaru(koneksiWs);
-    // return idKoneksi;
-    return "";
+  async listenChatBaru(onChatBaru: (chat: Chat) => void, onChatUpdate: (sedangDiproses: boolean, dialihkanKeTiket: boolean, daftarPesan: PesanChat[]) => void): Promise<string> {
+    const chatListener: ChatListener = {
+      id: "",
+      idChat: null,
+      onChatBaru,
+      onChatUpdate,
+    };
+    const idListener = this.tambahChatListener(chatListener);
+    return idListener;
   }
 
   async listenChatLama(idChat: bigint, idPengguna: number, onChatUpdate: (sedangDiproses: boolean, dialihkanKeTiket: boolean, daftarPesan: PesanChat[]) => void): Promise<string> {
@@ -324,6 +323,7 @@ export class KontrolChat {
     const chatListener: ChatListener = {
       id: "",
       idChat,
+      onChatBaru: () => {},
       onChatUpdate,
     };
     const idListener = this.tambahChatListener(chatListener);
