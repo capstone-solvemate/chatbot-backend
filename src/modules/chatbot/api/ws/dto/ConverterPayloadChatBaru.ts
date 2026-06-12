@@ -4,12 +4,11 @@ import type { PayloadWsChatBaru } from "./PayloadWsChatBaru.js";
 
 import { TipePayloadWsChat } from "./TipePayloadWsChat.js";
 
-export function chatToPayloadWsChatBaru(chat: Chat, idKoneksiWs: string): PayloadWsChatBaru {
+export function chatToPayloadWsChatBaru(chat: Chat): PayloadWsChatBaru {
   return {
     id: chat.id.toString(),
     idPembuat: chat.idPembuat,
     dialihkanKeTiket: chat.dialihkanKeTiket,
-    idKoneksiWs,
     sedangDiproses: chat.sedangDiproses,
     subjek: chat.subjek,
     tanggalDibuat: chat.tanggalDibuat.toISOString(),

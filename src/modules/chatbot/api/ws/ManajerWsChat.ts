@@ -1,16 +1,36 @@
+import type { WebSocket } from "ws";
+
 import * as uuid from "uuid";
 
 import type { WsErrorResponse } from "~/core/api/ws/dto/WsErrorResponse.js";
+import type { WsContext } from "~/core/api/ws/types/WsContext.js";
+import type { LogoutEventBus } from "~/modules/otentikasi/event/LogoutEventBus.js";
 
 import { ApiErrorCodes } from "~/core/api/ApiErrorCodes.js";
 import { ManajerWsWithAuth } from "~/core/api/ws/types/ManajerWsWithAuth.js";
+import { errorToWsError } from "~/core/api/ws/WsErrorConverter.js";
 import { TestGuard } from "~/core/test/TestGuard.js";
 
-import type { KoneksiWsChat } from "./KoneksiWsChat.js";
+import type { KontrolChat } from "../../application/KontrolChat.js";
+import type { PesanChat } from "../../domain/PesanChat.js";
+import type { PayloadWsBuatChat } from "./dto/PayloadWsBuatChat.js";
+import type { PayloadWsChatError } from "./dto/PayloadWsChatError.js";
+import type { PayloadWsChatReady } from "./dto/PayloadWsChatReady.js";
+import type { PayloadWsChatUpdate } from "./dto/PayloadWsChatUpdate.js";
+import type { PayloadWsPesanChatLama } from "./dto/PayloadWsPesanChatLama.js";
+
+import { validasiBalasChat } from "../../domain/Dto.js";
+import { pesanChatToPayloadWsObjekPesanChat } from "./dto/ConverterPayloadWsObjekPesanChat.js";
+import { daftarPesanChatToPayloadWsPesanChatLama } from "./dto/ConverterWsPesanChatLama.js";
+import { TipePayloadWsChat } from "./dto/TipePayloadWsChat.js";
+import { KoneksiWsChat } from "./KoneksiWsChat.js";
 
 export class ManajerWsChat extends ManajerWsWithAuth {
+  constructor(logoutEventBus: LogoutEventBus, private readonly kontrolChat: KontrolChat) {
+    super(logoutEventBus);
+  }
+
   private readonly koneksiByIdKoneksi = new Map<string, KoneksiWsChat>();
-  private readonly koneksiByIdChat = new Map<bigint, Map<string, KoneksiWsChat>>();
   private readonly koneksiByIdSession = new Map<string, Map<string, KoneksiWsChat>>();
 
   private generateIdKoneksi(): string {
@@ -40,16 +60,121 @@ export class ManajerWsChat extends ManajerWsWithAuth {
     return idKoneksi;
   }
 
-  setIdChat(idKoneksiWs: string, idSession: string, idChat: bigint) {
-    const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
-    if (koneksi && koneksi.idSession === idSession && koneksi.idChat === null) {
-      koneksi.idChat = idChat;
+  tambahKoneksi(koneksiWs: KoneksiWsChat) {
+    this.koneksiByIdKoneksi.set(koneksiWs.idKoneksi, koneksiWs);
 
-      if (!this.koneksiByIdChat.get(idChat)) {
-        this.koneksiByIdChat.set(idChat, new Map());
-      }
-      this.koneksiByIdChat.get(idChat)!.set(koneksi.idKoneksi, koneksi);
+    if (!this.koneksiByIdSession.get(koneksiWs.idSession)) {
+      this.koneksiByIdSession.set(koneksiWs.idSession, new Map());
     }
+    this.koneksiByIdSession.get(koneksiWs.idSession)!.set(koneksiWs.idKoneksi, koneksiWs);
+  }
+
+  private kirimPesanServerReady(ws: WebSocket) {
+    const payload: PayloadWsChatReady = {
+      tipe: TipePayloadWsChat.Ready,
+    };
+    ws.send(JSON.stringify(payload));
+  }
+
+  handleChatUpdate(idChat: string, sedangDiproses: boolean, dialihkanKeTiket: boolean, daftarPesan: PesanChat[], ws: WebSocket) {
+    const payload: PayloadWsChatUpdate = {
+      id: idChat,
+      sedangDiproses,
+      dialihkanKeTiket,
+      pesan: daftarPesan.map(pesan => pesanChatToPayloadWsObjekPesanChat(pesan)),
+      tipe: TipePayloadWsChat.ChatUpdate,
+    };
+    ws.send(JSON.stringify(payload));
+  }
+
+  async handleBuatPesanChat(payload: PayloadWsBuatChat, koneksiWs: KoneksiWsChat) {
+    try {
+      validasiBalasChat(payload as PayloadWsBuatChat);
+      await this.kontrolChat.balasChat(koneksiWs.idChat!, koneksiWs.idPengguna, payload.pesan, payload.daftarLampiran);
+    }
+    catch (e) {
+      const { error } = errorToWsError(e);
+      const payload: PayloadWsChatError = {
+        tipe: TipePayloadWsChat.Error,
+        error: error.error,
+        message: error.message,
+      };
+      koneksiWs.ws.send(JSON.stringify(payload));
+    }
+  }
+
+  async handleGetDaftarPesanChatLama(koneksiWs: KoneksiWsChat) {
+    try {
+      const daftarPesanLama = await this.kontrolChat.getDaftarPesanChatLama(koneksiWs.idChat!);
+      const payload: PayloadWsPesanChatLama = daftarPesanChatToPayloadWsPesanChatLama(daftarPesanLama);
+      koneksiWs.ws.send(JSON.stringify(payload));
+    }
+    catch (e) {
+      const { error } = errorToWsError(e);
+      const payload: PayloadWsChatError = {
+        tipe: TipePayloadWsChat.Error,
+        error: error.error,
+        message: error.message,
+      };
+      koneksiWs.ws.send(JSON.stringify(payload));
+    }
+  }
+
+  async handlePesanClient(payload: Record<string, any>, koneksiWs: KoneksiWsChat) {
+    switch (Number(payload.tipe)) {
+      case TipePayloadWsChat.GetDaftarChatLama:
+        await this.handleGetDaftarPesanChatLama(koneksiWs);
+        break;
+      case TipePayloadWsChat.BuatPesan:
+        await this.handleBuatPesanChat(payload as PayloadWsBuatChat, koneksiWs);
+        break;
+      default:
+        console.warn("cannot understand client chat websocket message");
+    }
+  }
+
+  async listenChatLama(ws: WebSocket, idChat: bigint, wsContext: WsContext) {
+    try {
+      const idListener = await this.kontrolChat.listenChatLama(
+        idChat,
+        wsContext.sesiPengguna!.idPengguna!,
+        (sedangDiproses, dialihkanKeTiket, daftarPesan) => this.handleChatUpdate(
+          idChat.toString(),
+          sedangDiproses,
+          dialihkanKeTiket,
+          daftarPesan,
+          ws,
+        ),
+      );
+
+      const koneksiWs = new KoneksiWsChat(ws, idChat, wsContext.sesiPengguna!.sessionId!, wsContext.sesiPengguna!.idPengguna!, idListener);
+      this.tambahKoneksi(koneksiWs);
+
+      ws.on("close", () => {
+        this.kontrolChat.unlistenChat(idListener);
+      });
+      ws.on("message", (message) => {
+        this.handlePesanClient(JSON.parse(message.toString()), koneksiWs);
+      });
+
+      this.kirimPesanServerReady(ws);
+    }
+    catch (e: any) {
+      const { status, error } = errorToWsError(e);
+      ws.close(status, JSON.stringify(error));
+    }
+  }
+
+  setIdChat(idKoneksiWs: string, idSession: string, idChat: bigint) {
+    // const koneksi = this.koneksiByIdKoneksi.get(idKoneksiWs);
+    // if (koneksi && koneksi.idSession === idSession && koneksi.idChat === null) {
+    //   koneksi.idChat = idChat;
+
+    //   if (!this.koneksiByIdChat.get(idChat)) {
+    //     this.koneksiByIdChat.set(idChat, new Map());
+    //   }
+    //   this.koneksiByIdChat.get(idChat)!.set(koneksi.idKoneksi, koneksi);
+    // }
   }
 
   getKoneksi(idKoneksiWs: string, idSession: string): KoneksiWsChat | null {
@@ -65,40 +190,6 @@ export class ManajerWsChat extends ManajerWsWithAuth {
     return koneksi;
   }
 
-  tambah(koneksi: KoneksiWsChat): void {
-    // Index by idChat
-    // if (!this.koneksiByChat.has(koneksi.idChat!)) {
-    //   this.koneksiByChat.set(koneksi.idChat!, new Set());
-    // }
-    // this.koneksiByChat.get(koneksi.idChat!)!.add(koneksi);
-
-    // // Index by idSession
-    // if (!this.koneksiBySession.has(koneksi.idSession)) {
-    //   this.koneksiBySession.set(koneksi.idSession, new Set());
-    // }
-    // this.koneksiBySession.get(koneksi.idSession)!.add(koneksi);
-  }
-
-  hapus(koneksi: KoneksiWsChat): void {
-    // Hapus dari index idChat
-    // const setChat = this.koneksiByChat.get(koneksi.idChat!);
-    // if (setChat) {
-    //   setChat.delete(koneksi);
-    //   if (setChat.size === 0) {
-    //     this.koneksiByChat.delete(koneksi.idChat!);
-    //   }
-    // }
-
-    // // Hapus dari index idSession
-    // const setSession = this.koneksiBySession.get(koneksi.idSession);
-    // if (setSession) {
-    //   setSession.delete(koneksi);
-    //   if (setSession.size === 0) {
-    //     this.koneksiBySession.delete(koneksi.idSession);
-    //   }
-    // }
-  }
-
   hapusByIdSession(idSession: string) {
     const mapKoneksiByIdSession = this.koneksiByIdSession.get(idSession);
     if (mapKoneksiByIdSession === undefined) {
@@ -107,16 +198,6 @@ export class ManajerWsChat extends ManajerWsWithAuth {
 
     for (const koneksi of mapKoneksiByIdSession.values()) {
       this.koneksiByIdKoneksi.delete(koneksi.idKoneksi);
-
-      if (koneksi.idChat !== null) {
-        const mapKoneksiByIdChat = this.koneksiByIdChat.get(koneksi.idChat);
-        if (mapKoneksiByIdChat !== undefined) {
-          mapKoneksiByIdChat.delete(koneksi.idKoneksi);
-          if (mapKoneksiByIdChat.size === 0) {
-            this.koneksiByIdChat.delete(koneksi.idChat);
-          }
-        }
-      }
     }
 
     this.koneksiByIdSession.delete(idSession);
@@ -125,16 +206,6 @@ export class ManajerWsChat extends ManajerWsWithAuth {
   hapusByIdKoneksi(id: string) {
     const koneksi = this.koneksiByIdKoneksi.get(id);
     if (koneksi) {
-      if (koneksi.idChat !== null) {
-        const mapKoneksiByChat = this.koneksiByIdChat.get(koneksi.idChat);
-        if (mapKoneksiByChat !== undefined) {
-          mapKoneksiByChat.delete(koneksi.idKoneksi);
-          if (mapKoneksiByChat.size === 0) {
-            this.koneksiByIdChat.delete(koneksi.idChat);
-          }
-        }
-      }
-
       const mapKoneksiBySession = this.koneksiByIdSession.get(koneksi.idSession);
       if (mapKoneksiBySession !== undefined) {
         mapKoneksiBySession.delete(koneksi.idKoneksi);
@@ -144,19 +215,6 @@ export class ManajerWsChat extends ManajerWsWithAuth {
       }
 
       this.koneksiByIdKoneksi.delete(id);
-    }
-  }
-
-  broadcast(idChat: bigint, pesan: object): void {
-    const koneksiSet = this.koneksiByIdChat.get(idChat);
-    if (!koneksiSet)
-      return;
-
-    const payload = JSON.stringify(pesan);
-    for (const koneksi of koneksiSet.values()) {
-      if (koneksi.ws.readyState === koneksi.ws.OPEN) {
-        koneksi.ws.send(payload);
-      }
     }
   }
 
@@ -187,10 +245,5 @@ export class ManajerWsChat extends ManajerWsWithAuth {
   testGetKoneksiByIdSession(): Map<string, Map<string, KoneksiWsChat>> {
     TestGuard.ensureInTestMode();
     return this.koneksiByIdSession;
-  }
-
-  testGetKoneksiByIdChat(): Map<bigint, Map<string, KoneksiWsChat>> {
-    TestGuard.ensureInTestMode();
-    return this.koneksiByIdChat;
   }
 }

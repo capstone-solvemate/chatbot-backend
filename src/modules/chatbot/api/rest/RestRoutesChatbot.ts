@@ -49,9 +49,9 @@ const multerUploadLampiranChat = multer({
  *       200:
  *         description: Sesi chat berhasil dibuat, pertanyaan masuk antrian RAG
  */
-routerChatbot.post("/", auth([PeranPengguna.Karyawan]), multerUploadLampiranChat.array("files", 5), (req, res, next) => {
-  kontrolChat.buatChat(req, res).catch(next);
-});
+// routerChatbot.post("/", auth([PeranPengguna.Karyawan]), multerUploadLampiranChat.array("files", 5), (req, res, next) => {
+//   kontrolChat.buatChat(req, res).catch(next);
+// });
 
 /**
  * @swagger

@@ -3,19 +3,18 @@ import { Worker } from "node:worker_threads";
 
 import type { RagConfig } from "~/core/config/domain/RagConfig.js";
 
-import type { ManajerWsChat } from "../api/ws/ManajerWsChat.js";
 import type { RepositoriChat } from "../data/RepositoriChat.js";
 import type { PesanDariWorkerRag, PesanKeWorkerRag, RiwayatRag } from "../domain/PesanRagWorker.js";
-import type { ChatEventBus } from "../event/ChatEventBus.js";
 
 export class RagWorkerClient {
   private worker: Worker | null = null;
 
+  private callbackHasilSiap: ((idChat: bigint, pesan: string) => void) | null = null;
+
   constructor(
     private readonly config: RagConfig,
-    private readonly manajerWsChat: ManajerWsChat,
+    // private readonly manajerWsChat: ManajerWsChat,
     private readonly repositoriChat: RepositoriChat,
-    private readonly chatEventBus: ChatEventBus,
   ) {}
 
   tambahTugas(idChat: bigint, history: RiwayatRag[]): void {
@@ -89,10 +88,10 @@ export class RagWorkerClient {
       this.repositoriChat.selesaiProsesChat(idChat)
         .then(() => this.repositoriChat.tandaiPesanTerakhirGagal(idChat))
         .then(() => {
-          this.manajerWsChat.broadcast(idChat, {
-            type: "error",
-            pesan: hasil.pesanError,
-          });
+          // this.manajerWsChat.broadcast(idChat, {
+          //   type: "error",
+          //   pesan: hasil.pesanError,
+          // });
         })
         .catch((err) => {
           console.error(
@@ -102,46 +101,13 @@ export class RagWorkerClient {
           );
         });
     }
+    else {
+      this.callbackHasilSiap?.(idChat, hasil.jawaban);
+    }
+  }
 
-    // this.repositoriChat
-    //   .buatPesanChat(idChat, hasil.jawaban, true)
-    //   .then((pesanAsisten) => {
-    //     return this.repositoriChat.selesaiProsesChat(idChat).then(() => pesanAsisten);
-    //   })
-    //   .then((pesanAsisten) => {
-    //     // Fetch chat untuk dapatkan idPembuat sebelum emit event
-    //     return this.repositoriChat.getChatById(idChat).then((chat) => {
-    //       if (chat) {
-    //         this.chatEventBus.emit("pesan_baru", {
-    //           idChat,
-    //           idPembuat: chat.idPembuat,
-    //           tanggalDibuat: pesanAsisten.tanggalDibuat,
-    //         });
-    //       }
-    //       return pesanAsisten;
-    //     });
-    //   })
-    //   .then((pesanAsisten) => {
-    //     this.manajerWsChat.broadcast(idChat, {
-    //       type: "jawaban",
-    //       pesan: {
-    //         id: pesanAsisten.id.toString(),
-    //         pesan: pesanAsisten.pesan,
-    //         tanggalDibuat: pesanAsisten.tanggalDibuat,
-    //       },
-    //     });
-    //   })
-    //   .catch((err) => {
-    //     console.error(
-    //       new Date().toISOString(),
-    //       "[RagWorkerClient] Gagal menyimpan jawaban ke DB:",
-    //       err,
-    //     );
-    //     this.manajerWsChat.broadcast(idChat, {
-    //       type: "error",
-    //       pesan: "Gagal menyimpan jawaban. Silakan coba lagi.",
-    //     });
-    //   });
+  setCallbackHasilSiap(callback: (idChat: bigint, pesan: string) => void) {
+    this.callbackHasilSiap = callback;
   }
 
   berhenti(): void {

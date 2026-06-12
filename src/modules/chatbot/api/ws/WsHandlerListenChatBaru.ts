@@ -6,7 +6,7 @@ import type { WsContext } from "~/core/api/ws/types/WsContext";
 import { WsHandler } from "~/core/api/ws/types/WsHandler";
 
 import type { KontrolChat } from "../../application/KontrolChat.js";
-import type { PayloadIdKoneksiWsChat } from "./dto/PayloadIdKoneksiWsChat.js";
+import type { PayloadWsChatReady } from "./dto/PayloadWsChatReady.js";
 
 import { TipePayloadWsChat } from "./dto/TipePayloadWsChat.js";
 
@@ -16,11 +16,10 @@ export class WsHandlerListenChatBaru extends WsHandler {
   }
 
   async handle(ws: WebSocket, req: IncomingMessage, context: WsContext): Promise<void> {
-    const idKoneksi = await this.kontrolChat.listenPesanChatBaru(ws, context.sesiPengguna!.sessionId);
+    await this.kontrolChat.listenPesanChatBaru(ws, context.sesiPengguna!.sessionId, context.sesiPengguna!.idPengguna!);
 
-    const payload: PayloadIdKoneksiWsChat = {
-      idKoneksi,
-      tipe: TipePayloadWsChat.IdKoneksi,
+    const payload: PayloadWsChatReady = {
+      tipe: TipePayloadWsChat.Ready,
     };
     ws.send(JSON.stringify(payload));
   }

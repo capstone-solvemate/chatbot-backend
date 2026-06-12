@@ -141,6 +141,7 @@ export class DI {
     if (!this.manajerWsChat) {
       this.manajerWsChat = new ManajerWsChat(
         this.provideLogoutEventBus(),
+        this.provideKontrolChat(),
       );
     }
     return this.manajerWsChat;
@@ -259,9 +260,7 @@ export class DI {
     if (!this.ragWorkerClient) {
       this.ragWorkerClient = new RagWorkerClient(
         this.provideConfig().ragConfig,
-        this.provideManajerWsChat(),
         this.provideRepositoriChat(),
-        this.provideChatEventBus(),
       );
     }
     return this.ragWorkerClient;
@@ -433,7 +432,6 @@ export class DI {
     if (!this.kontrolChat) {
       this.kontrolChat = new KontrolChat(
         this.provideRepositoriChat(),
-        this.provideManajerWsChat(),
         this.provideRagWorkerClient(),
         this.provideChatEventBus(),
         this.provideRepositoriLampiran(),

@@ -5,6 +5,8 @@ export class KoneksiWsChat {
     public readonly ws: WebSocket,
     public idChat: bigint | null,
     public readonly idSession: string,
+    public readonly idPengguna: number,
     public idKoneksi: string = "",
-  ) {}
+  ) {
+  }
 }

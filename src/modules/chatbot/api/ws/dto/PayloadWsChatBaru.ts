@@ -17,5 +17,4 @@ export type PayloadWsChatBaru = {
       id: string;
     }[];
   }[];
-  idKoneksiWs: string;
 } & PayloadWsChat;

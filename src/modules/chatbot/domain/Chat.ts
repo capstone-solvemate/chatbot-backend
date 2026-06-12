@@ -1,5 +1,7 @@
 import type { PesanChat } from "./PesanChat.js";
 
+export const CHAT_ENTITY_NAME = "Chat";
+
 export class Chat {
   constructor(
     public id: bigint,
