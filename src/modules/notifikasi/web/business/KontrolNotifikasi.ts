@@ -99,7 +99,7 @@ export class KontrolNotifikasi {
     const namaPengirim = pengirim?.nama ?? "Seseorang";
 
     const judul = "Status tiket diperbarui";
-    const deskripsi = `${namaPengirim} mengubah status tiket "${payload.judulTiket}" menjadi ${payload.statusBaru}.`;
+    const deskripsi = `${namaPengirim} mengubah status tiket "${payload.judulTiket}" menjadi ${statusTiketToStringV2(payload.statusBaru)}.`;
 
     if (payload.peranPengirim === PeranPengguna.Karyawan) {
       const daftarAdmin = await this.repositoriPengguna.getPenggunaAktifByPeran(PeranPengguna.Admin);
