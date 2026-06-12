@@ -91,9 +91,10 @@ export class ManajerWsChat extends ManajerWsWithAuth {
     ws.send(JSON.stringify(payload));
   }
 
-  handleChatBaru(chat: Chat, ws: WebSocket) {
+  handleChatBaru(chat: Chat, koneksiWs: KoneksiWsChat) {
+    koneksiWs.idChat = chat.id;
     const payloadChat: PayloadWsChatBaru = chatToPayloadWsChatBaru(chat);
-    ws.send(JSON.stringify(payloadChat));
+    koneksiWs.ws.send(JSON.stringify(payloadChat));
   }
 
   async handleBuatChat(payload: PayloadWsBuatChat, koneksiWs: KoneksiWsChat) {
@@ -169,10 +170,12 @@ export class ManajerWsChat extends ManajerWsWithAuth {
 
   async listenChatBaru(ws: WebSocket, wsContext: WsContext) {
     try {
+      const koneksiWs = new KoneksiWsChat(ws, null, wsContext.sesiPengguna!.sessionId!, wsContext.sesiPengguna!.idPengguna!);
+
       const idListener = await this.kontrolChat.listenChatBaru(
-        chat => this.handleChatBaru(chat, ws),
+        chat => this.handleChatBaru(chat, koneksiWs),
         (sedangDiproses, dialihkanKeTiket, daftarPesan) => this.handleChatUpdate(
-          "0",
+          koneksiWs.idChat?.toString() ?? "0",
           sedangDiproses,
           dialihkanKeTiket,
           daftarPesan,
@@ -180,7 +183,7 @@ export class ManajerWsChat extends ManajerWsWithAuth {
         ),
       );
 
-      const koneksiWs = new KoneksiWsChat(ws, null, wsContext.sesiPengguna!.sessionId!, wsContext.sesiPengguna!.idPengguna!, idListener);
+      koneksiWs.idKoneksi = idListener;
       this.tambahKoneksi(koneksiWs);
 
       ws.on("close", () => {
