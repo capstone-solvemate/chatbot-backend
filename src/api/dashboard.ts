@@ -12,7 +12,6 @@ import { PeranPengguna } from "../modules/pengguna/domain/PeranPengguna.js";
 const routerDashboard = express.Router();
 const repositoriSession = DI.provideRepositoriSession();
 const dashboardWsManager = DI.provideDashboardWsManager();
-const chatbotMonitoringWsManager = DI.provideChatbotMonitoringWsManager();
 
 /**
  * Parse filter dari query string WebSocket URL.
@@ -69,35 +68,6 @@ export async function handleDashboardWsUpgrade(
 
   const filter = parseFilter(req.url ?? "");
   await dashboardWsManager.tambahKoneksi(ws, session.id, filter);
-}
-
-/**
- * Handler upgrade WebSocket untuk /api/dashboard/chatbot/ws
- * Hanya Admin yang diizinkan.
- */
-export async function handleChatbotMonitoringWsUpgrade(
-  ws: WebSocket,
-  req: IncomingMessage,
-): Promise<void> {
-  const cookieHeader = req.headers.cookie ?? "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map(c => c.trim().split("=").map(decodeURIComponent)),
-  );
-  const sessionId = cookies.session;
-
-  if (!sessionId) {
-    ws.close(4001, "Unauthenticated");
-    return;
-  }
-
-  const session = await repositoriSession.getById(sessionId);
-  if (!session || !session.idPengguna || session.peranPengguna !== PeranPengguna.Admin) {
-    ws.close(4001, "Unauthenticated");
-    return;
-  }
-
-  const filter = parseFilter(req.url ?? "");
-  await chatbotMonitoringWsManager.tambahKoneksi(ws, session.id, filter);
 }
 
 export default routerDashboard;

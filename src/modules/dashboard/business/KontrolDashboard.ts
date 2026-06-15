@@ -1,12 +1,9 @@
-import type { RepositoriChatbotMonitoring } from "../data/RepositoriChatbotMonitoring.js";
 import type { RepositoriDashboard } from "../data/RepositoriDashboard.js";
-import type { ChatbotMonitoringPayload } from "../domain/ChatbotMonitoringPayload.js";
 import type { DashboardPayload, FilterDashboard } from "../domain/DashboardPayload.js";
 
 export class KontrolDashboard {
   constructor(
     private readonly repositoriDashboard: RepositoriDashboard,
-    private readonly repositoriChatbotMonitoring: RepositoriChatbotMonitoring,
   ) {}
 
   async buatPayloadAdmin(filter: FilterDashboard): Promise<DashboardPayload> {
@@ -39,35 +36,6 @@ export class KontrolDashboard {
       historySesiChat,
       avgAktivitasPerJam,
       mostFrequentIssueCategories,
-      filter,
-    };
-  }
-
-  async buatPayloadChatbot(filter: FilterDashboard): Promise<ChatbotMonitoringPayload> {
-    const [
-      totalSesi,
-      totalPesan,
-      unansweredQuestions,
-      historyAktivitas,
-      avgSesiPerJam,
-    ] = await Promise.all([
-      this.repositoriChatbotMonitoring.getTotalSesi(filter),
-      this.repositoriChatbotMonitoring.getTotalPesan(filter),
-      this.repositoriChatbotMonitoring.getUnansweredQuestions(filter),
-      this.repositoriChatbotMonitoring.getHistoryAktivitas(filter),
-      this.repositoriChatbotMonitoring.getAvgSesiPerJam(filter),
-    ]);
-
-    const avgPesanPerSesi = totalSesi === 0 ? 0 : Math.round((totalPesan / totalSesi) * 10) / 10;
-
-    return {
-      totalSesi,
-      totalPesan,
-      avgPesanPerSesi,
-      unansweredQuestions,
-      historyAktivitas,
-      avgSesiPerJam,
-      topUnansweredQuestions: null,
       filter,
     };
   }

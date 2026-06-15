@@ -5,7 +5,7 @@ import type { WebSocket } from "ws";
 
 import { WebSocketServer } from "ws";
 
-import { handleChatbotMonitoringWsUpgrade, handleDashboardWsUpgrade } from "~/api/dashboard.js";
+import { handleDashboardWsUpgrade } from "~/api/dashboard.js";
 import { handleNotifikasiWsUpgrade } from "~/api/notifikasi.js";
 
 import type { WsErrorResponse } from "./dto/WsErrorResponse.js";
@@ -41,7 +41,6 @@ export class WsServerAplikasi {
 
     const WS_NOTIFIKASI_PATTERN = /^\/api\/notifikasi\/ws$/;
     const WS_DASHBOARD_PATTERN = /^\/api\/dashboard\/ws$/;
-    const WS_CHATBOT_MONITORING_PATTERN = /^\/api\/dashboard\/chatbot\/ws$/;
 
     if (WS_NOTIFIKASI_PATTERN.test(pathname)) {
       wss.handleUpgrade(req, socket, head, (ws) => {
@@ -57,16 +56,6 @@ export class WsServerAplikasi {
       wss.handleUpgrade(req, socket, head, (ws) => {
         handleDashboardWsUpgrade(ws, req).catch((err) => {
           console.error(new Date().toISOString(), "[WS] Dashboard upgrade error:", err);
-          ws.close(4500, "Internal server error");
-        });
-      });
-      return;
-    }
-
-    if (WS_CHATBOT_MONITORING_PATTERN.test(pathname)) {
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        handleChatbotMonitoringWsUpgrade(ws, req).catch((err) => {
-          console.error(new Date().toISOString(), "[WS] Chatbot monitoring upgrade error:", err);
           ws.close(4500, "Internal server error");
         });
       });

@@ -21,16 +21,17 @@ import { createModelPesanTiket } from "~/models/ModelPesanTiket";
 import { createModelResetPassword } from "~/models/ModelResetPassword";
 import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
+import { ChatbotMonitoringWsManager } from "~/modules/chatbot_monitoring/api/ws/ChatbotMonitoringWsManager";
+import { KontrolChatbotMonitoring } from "~/modules/chatbot_monitoring/application/KontrolChatbotMonitoring";
+import { RepositoriChatbotMonitoring } from "~/modules/chatbot_monitoring/data/RepositoriChatbotMonitoring";
 import { ManajerWsChat } from "~/modules/chatbot/api/ws/ManajerWsChat";
 import { KontrolChat } from "~/modules/chatbot/application/KontrolChat";
 import { RagWorkerClient } from "~/modules/chatbot/application/RagWorkerClient";
 import { RepositoriChat } from "~/modules/chatbot/data/RepositoriChat";
 import { RowConverterChat } from "~/modules/chatbot/data/row/RowConverterChat";
 import { ChatEventBus } from "~/modules/chatbot/event/ChatEventBus";
-import { ChatbotMonitoringWsManager } from "~/modules/dashboard/business/ChatbotMonitoringWsManager";
 import { DashboardWsManager } from "~/modules/dashboard/business/DashboardWsManager";
 import { KontrolDashboard } from "~/modules/dashboard/business/KontrolDashboard";
-import { RepositoriChatbotMonitoring } from "~/modules/dashboard/data/RepositoriChatbotMonitoring";
 import { RepositoriDashboard } from "~/modules/dashboard/data/RepositoriDashboard";
 import { DashboardSubscriber } from "~/modules/dashboard/event/DashboardSubscriber";
 import { KontrolFaq } from "~/modules/faq/business/KontrolFaq";
@@ -519,7 +520,6 @@ export class DI {
     if (!this.kontrolDashboard) {
       this.kontrolDashboard = new KontrolDashboard(
         this.provideRepositoriDashboard(),
-        this.provideRepositoriChatbotMonitoring(),
       );
     }
     return this.kontrolDashboard;
@@ -533,10 +533,20 @@ export class DI {
     return this.dashboardWsManager;
   }
 
+  private static kontrolChatbotMonitoring: KontrolChatbotMonitoring | null = null;
+  static provideKontrolChatbotMonitoring(): KontrolChatbotMonitoring {
+    if (!this.kontrolChatbotMonitoring) {
+      this.kontrolChatbotMonitoring = new KontrolChatbotMonitoring(
+        this.provideRepositoriChatbotMonitoring(),
+      );
+    }
+    return this.kontrolChatbotMonitoring;
+  }
+
   private static chatbotMonitoringWsManager: ChatbotMonitoringWsManager | null = null;
   static provideChatbotMonitoringWsManager(): ChatbotMonitoringWsManager {
     if (!this.chatbotMonitoringWsManager) {
-      this.chatbotMonitoringWsManager = new ChatbotMonitoringWsManager(this.provideKontrolDashboard());
+      this.chatbotMonitoringWsManager = new ChatbotMonitoringWsManager(this.provideKontrolChatbotMonitoring(), this.provideLogoutEventBus());
     }
     return this.chatbotMonitoringWsManager;
   }
@@ -577,6 +587,5 @@ export class DI {
   static registerWsHandlers(): void {
     WsSessionRegistry.instance.daftarkan(this.provideNotifikasiWsManager());
     WsSessionRegistry.instance.daftarkan(this.provideDashboardWsManager());
-    WsSessionRegistry.instance.daftarkan(this.provideChatbotMonitoringWsManager());
   }
 }

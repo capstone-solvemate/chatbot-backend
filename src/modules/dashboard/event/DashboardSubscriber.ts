@@ -1,3 +1,4 @@
+import type { ChatbotMonitoringWsManager } from "~/modules/chatbot_monitoring/api/ws/ChatbotMonitoringWsManager.js";
 import type { ChatEventBus } from "~/modules/chatbot/event/ChatEventBus.js";
 import type { EventChatDibuatPayload } from "~/modules/chatbot/event/payload/EventChatDibuatPayload.js";
 import type { EventPesanChatBaruPayload } from "~/modules/chatbot/event/payload/EventPesanChatBaruPayload.js";
@@ -5,7 +6,6 @@ import type { EventStatusTiketDiubahPayload } from "~/modules/tiket/event/payloa
 import type { EventTiketDibuatPayload } from "~/modules/tiket/event/payload/EventTiketDibuatPayload.js";
 import type { TiketEventBus } from "~/modules/tiket/event/TiketEventBus";
 
-import type { ChatbotMonitoringWsManager } from "../business/ChatbotMonitoringWsManager.js";
 import type { DashboardWsManager } from "../business/DashboardWsManager.js";
 
 /**

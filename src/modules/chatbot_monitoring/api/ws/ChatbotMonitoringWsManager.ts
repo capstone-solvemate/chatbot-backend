@@ -1,9 +1,11 @@
 import type { WebSocket } from "ws";
 
-import type { IWsSessionHandler } from "~/core/ws/IWsSessionHandler.js";
+import type { LogoutEventBus } from "~/modules/otentikasi/event/LogoutEventBus.js";
 
-import type { FilterDashboard } from "../domain/DashboardPayload.js";
-import type { KontrolDashboard } from "./KontrolDashboard.js";
+import { ManajerWsWithAuth } from "~/core/api/ws/types/ManajerWsWithAuth.js";
+
+import type { FilterDashboard } from "../../../dashboard/domain/DashboardPayload.js";
+import type { KontrolChatbotMonitoring } from "../../application/KontrolChatbotMonitoring.js";
 
 type KoneksiChatbotMonitoring = {
   ws: WebSocket;
@@ -11,8 +13,10 @@ type KoneksiChatbotMonitoring = {
   filter: FilterDashboard;
 };
 
-export class ChatbotMonitoringWsManager implements IWsSessionHandler {
-  constructor(private readonly kontrolDashboard: KontrolDashboard) {}
+export class ChatbotMonitoringWsManager extends ManajerWsWithAuth {
+  constructor(private readonly kontrolChatbotMonitoring: KontrolChatbotMonitoring, logoutEventBus: LogoutEventBus) {
+    super(logoutEventBus);
+  }
 
   private readonly bySession = new Map<string, Set<KoneksiChatbotMonitoring>>();
 
@@ -55,7 +59,7 @@ export class ChatbotMonitoringWsManager implements IWsSessionHandler {
     }
   }
 
-  invalidasiSession(idSession: string): void {
+  override async handleLogout(idSession: string): Promise<void> {
     const koneksiSet = this.bySession.get(idSession);
     if (!koneksiSet)
       return;
@@ -90,7 +94,7 @@ export class ChatbotMonitoringWsManager implements IWsSessionHandler {
   private async kirimPayload(koneksi: KoneksiChatbotMonitoring): Promise<void> {
     if (koneksi.ws.readyState !== koneksi.ws.OPEN)
       return;
-    const payload = await this.kontrolDashboard.buatPayloadChatbot(koneksi.filter);
+    const payload = await this.kontrolChatbotMonitoring.buatPayloadChatbot(koneksi.filter);
     koneksi.ws.send(JSON.stringify(payload));
   }
 

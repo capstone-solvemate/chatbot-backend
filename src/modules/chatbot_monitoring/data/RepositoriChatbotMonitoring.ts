@@ -2,7 +2,7 @@ import type { Sequelize } from "sequelize";
 
 import { QueryTypes } from "sequelize";
 
-import type { FilterDashboard, HistoryItem } from "../domain/DashboardPayload.js";
+import type { FilterDashboard, HistoryItem } from "../../dashboard/domain/DashboardPayload.js";
 
 const NAMA_BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
