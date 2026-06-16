@@ -265,7 +265,7 @@ export class KontrolTiket {
     // Batch-fetch lampiran untuk pesan tiket
     const pesanTiketIds = pesans.map(p => p.id);
     const lampiranMap = pesanTiketIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesanBatch("tiket", pesanTiketIds)
+      ? await this.repositoriLampiran.getByIdPesanBatch("pesan_tiket", pesanTiketIds)
       : new Map();
 
     // Batch-fetch lampiran untuk pesan chat
