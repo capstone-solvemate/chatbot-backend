@@ -112,7 +112,7 @@ export class KontrolChatbotMonitoring {
                 </tr>
                 <tr>
                   <td style="padding:10px; border:1px solid #dcdcdc; background-color:#f8f9fa;"> Waktu Generate </td>
-                  <td style="padding:10px; border:1px solid #dcdcdc;"> ${waktuGenerate.toISOString().slice(0, 19)} </td>
+                  <td style="padding:10px; border:1px solid #dcdcdc;"> ${waktuGenerate.toISOString().slice(0, 19).replace("T", " ")} </td>
                 </tr>
               </table>
               <p> Laporan monitoring chatbot terlampir pada email ini untuk dapat ditinjau lebih lanjut. </p>
@@ -134,7 +134,7 @@ export class KontrolChatbotMonitoring {
 
 </html>`,
       lampiran: [{
-        filename: `report-${waktuGenerate.toISOString().slice(0, 19)}.pdf`,
+        filename: `report-${waktuGenerate.toISOString().slice(0, 19).replace("T", "-")}.pdf`,
         data: pdfBuffer,
         contentType: "application/pdf",
       }],

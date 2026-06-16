@@ -89,10 +89,9 @@ export class ReportGenerator {
   private async generateAverageSessionChart(
     labels: string[],
     values: number[],
+    width: number,
+    height: number,
   ): Promise<Buffer> {
-    const width = 900;
-    const height = 360;
-
     const chart = new ChartJSNodeCanvas({
       width,
       height,
@@ -169,10 +168,7 @@ export class ReportGenerator {
     });
   }
 
-  private async generateActivityTrendsChart(labels: string[], values: number[]): Promise<Buffer> {
-    const width = 900;
-    const height = 360;
-
+  private async generateActivityTrendsChart(labels: string[], values: number[], width: number, height: number): Promise<Buffer> {
     const chart = new ChartJSNodeCanvas({
       width,
       height,
@@ -357,12 +353,17 @@ export class ReportGenerator {
 
     // write charts
     const chartWidth = (pageWidth - marginLeft - marginRight);
-    const chartHeight = 360;
+    const chartHeight = 260;
     const chartHeaderHeight = 60;
+
+    const imageWidth = Math.round(chartWidth - 10);
+    const imageHeight = Math.round(chartHeight - chartHeaderHeight - 10);
 
     const activityTrendschartBuffer = await this.generateActivityTrendsChart(
       data.historyAktivitas.map(item => item.label),
       data.historyAktivitas.map(item => item.jumlah),
+      imageWidth,
+      imageHeight,
     );
 
     const chartY = startY + (cardHeight + cardsGap) * 2 + 30;
@@ -396,7 +397,7 @@ export class ReportGenerator {
       {
         fit: [
           chartWidth - 10,
-          chartHeight - chartHeaderHeight - 15,
+          chartHeight - chartHeaderHeight - 5,
         ],
 
         align: "center",
@@ -426,6 +427,8 @@ export class ReportGenerator {
     const chartBufferAvg = await this.generateAverageSessionChart(
       tickLabels,
       timezoneFixedAvg.map(item => item.jumlah),
+      imageWidth,
+      imageHeight,
     );
 
     const avgChartX = marginLeft;
@@ -466,7 +469,7 @@ export class ReportGenerator {
       {
         fit: [
           chartWidth - 10,
-          chartHeight - chartHeaderHeight - 15,
+          chartHeight - chartHeaderHeight - 5,
         ],
         align: "center",
       },
