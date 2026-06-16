@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+import { DataNotFoundError } from "~/core/types/DataNotFoundError.js";
 import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
 
@@ -15,7 +19,7 @@ import type {
 } from "./dto/TiketResponseDto.js";
 
 import { PeranPengguna } from "../../pengguna/domain/PeranPengguna.js";
-import { lampiranToDto } from "../../upload/domain/Lampiran.js";
+import { LAMPIRAN_ENTITY_NAME, lampiranToDto } from "../../upload/domain/Lampiran.js";
 import { PesanTiket } from "../domain/PesanTiket.js";
 import { intToStatusTiket, StatusTiket, statusTiketToString } from "../domain/StatusTiket.js";
 import { Tiket } from "../domain/Tiket.js";
@@ -37,6 +41,7 @@ function tiketToDto({ tiket, namaPembuat }: TiketDenganPembuat): TiketResponseDt
     status: statusTiketToString(tiket.status),
     dibuatPada: tiket.dibuatPada.toISOString(),
     diperbaruiPada: tiket.diperbaruiPada.toISOString(),
+    lampiran: [],
   };
 }
 
@@ -154,22 +159,50 @@ export class KontrolTiket {
     }
 
     const pesans = await this.repositoriTiket.getPesanByTiket(idChat);
+    const lampiranList = await this.repositoriLampiran.getByIdPesan("tiket", result.tiket.id);
 
     // Batch-fetch lampiran untuk semua pesan tiket
     const pesanIds = pesans.map(p => p.id);
-    const lampiranMap = pesanIds.length > 0
+    const lampiranPesanMap = pesanIds.length > 0
       ? await this.repositoriLampiran.getByIdPesanBatch("tiket", pesanIds)
       : new Map();
 
     const data: TiketDetailResponseDto = {
       ...tiketToDto(result),
+      lampiran: lampiranList.map(lampiranToDto),
       pesanTiket: pesans.map(p => ({
         ...pesanTiketToDto(p),
-        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
+        lampiran: (lampiranPesanMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     };
 
     res.json({ success: true, data });
+  }
+
+  async getLampiranTiket(req: Request, res: Response): Promise<void> {
+    const idChat = BigInt(req.params.idChat);
+    const sesi = req.sesiPengguna!;
+
+    const result = await this.repositoriTiket.getByIdChat(idChat);
+    if (!result) {
+      res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
+      return;
+    }
+
+    const isAdmin = sesi.peranPengguna === PeranPengguna.Admin;
+    if (!isAdmin && result.tiket.idPembuat !== sesi.idPengguna) {
+      throw new ForbiddenError();
+    }
+
+    const idLampiran = BigInt(req.params.idLampiran);
+    const lampiran = await this.repositoriLampiran.getById(idLampiran);
+    if (!lampiran) {
+      throw new DataNotFoundError(LAMPIRAN_ENTITY_NAME);
+    }
+
+    const fullPath = path.resolve(process.cwd(), lampiran.path);
+    const data = await readFile(fullPath);
+    res.send(data);
   }
 
   async getTiketByIdAdmin(req: Request, res: Response): Promise<void> {

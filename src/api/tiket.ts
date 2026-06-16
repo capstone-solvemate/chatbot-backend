@@ -31,6 +31,10 @@ routerTiket.get("/:idChat", auth(semuaPeran), (req, res, next) => {
   kontrol.getTiketById(req, res).catch(next);
 });
 
+routerTiket.get("/:idChat/lampiran/:idLampiran", auth(semuaPeran), (req, res, next) => {
+  kontrol.getLampiranTiket(req, res).catch(next);
+});
+
 routerTiket.patch("/:idChat/status", auth(semuaPeran), (req, res, next) => {
   kontrol.updateStatusTiket(req, res).catch(next);
 });

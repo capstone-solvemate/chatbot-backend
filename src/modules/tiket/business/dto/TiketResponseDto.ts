@@ -9,6 +9,7 @@ export type TiketResponseDto = {
   status: string;
   dibuatPada: string;
   diperbaruiPada: string;
+  lampiran: any;
 };
 
 export type TiketDetailResponseDto = TiketResponseDto & {

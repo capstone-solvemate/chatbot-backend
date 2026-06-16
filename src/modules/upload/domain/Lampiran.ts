@@ -1,5 +1,7 @@
 export type JenisPesan = "pesan_tiket" | "tiket";
 
+export const LAMPIRAN_ENTITY_NAME = "Lampiran";
+
 export class Lampiran {
   constructor(
     public readonly id: bigint,
