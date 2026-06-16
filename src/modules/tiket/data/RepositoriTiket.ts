@@ -1,6 +1,8 @@
 import type { Model, ModelStatic, Sequelize, WhereOptions } from "sequelize";
 
-import { col, fn, Op } from "sequelize";
+import { col, fn, Op, UniqueConstraintError } from "sequelize";
+
+import { ConflictError } from "~/core/types/ConflictError.js";
 
 import type { PesanTiket } from "../domain/PesanTiket.js";
 import type { Tiket } from "../domain/Tiket.js";
@@ -73,6 +75,12 @@ export class RepositoriTiket {
     }
     catch (e) {
       await tx.rollback();
+      if (e instanceof UniqueConstraintError) {
+        const hasIdChat = Object.keys(e.fields).some(key => /id_chat/.test(key));
+        if (hasIdChat) {
+          throw new ConflictError("id_chat");
+        }
+      }
       throw e;
     }
   }
