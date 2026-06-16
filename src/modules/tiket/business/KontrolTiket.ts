@@ -86,6 +86,26 @@ export class KontrolTiket {
       ),
     );
 
+    // Simpan lampiran langsung dari form-data (jika ada)
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    if (files.length > 0) {
+      await Promise.all(
+        files.map(file =>
+          this.repositoriLampiran.simpan({
+            jenisPesan: "tiket" as const,
+            idPesan: tiket.id,
+            idPengunggah: sesi.idPengguna!,
+            namaAsli: file.originalname,
+            namaBerkas: file.filename,
+            path: file.path.replace(/\\/g, "/"),
+            ukuran: file.size,
+            mimeType: file.mimetype,
+            dibuatPada: new Date(),
+          }),
+        ),
+      );
+    }
+
     this.tiketEventBus.emit("tiket_dibuat", {
       idTiket: tiket.idChat,
       idPengguna: sesi.idPengguna!,
@@ -174,10 +194,10 @@ export class KontrolTiket {
       : new Map();
 
     // Batch-fetch lampiran untuk pesan chat
-    const pesanChatIds = historiChat.map(p => p.id);
-    const lampiranChatMap = pesanChatIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanChatIds)
-      : new Map();
+    // const pesanChatIds = historiChat.map(p => p.id);
+    // const lampiranChatMap = pesanChatIds.length > 0
+    //   ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanChatIds)
+    //   : new Map();
 
     const data: TiketAdminDetailResponseDto = {
       ...tiketToDto(result),
@@ -192,7 +212,8 @@ export class KontrolTiket {
         pesan: p.pesan,
         dibuatPada: p.tanggalDibuat.toISOString(),
         dariAsisten: p.chatAsisten,
-        lampiran: (lampiranChatMap.get(p.id.toString()) ?? []).map(lampiranToDto),
+        lampiran: [],
+        // lampiran: (lampiranChatMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     };
 
@@ -261,7 +282,7 @@ export class KontrolTiket {
       ? await Promise.all(
           files.map(file =>
             this.repositoriLampiran.simpan({
-              jenisPesan: "tiket" as const,
+              jenisPesan: "pesan_tiket" as const,
               idPesan: pesan.id,
               idPengunggah: sesi.idPengguna!,
               namaAsli: file.originalname,

@@ -1,4 +1,4 @@
-export type JenisPesan = "chat" | "tiket";
+export type JenisPesan = "pesan_tiket" | "tiket";
 
 export class Lampiran {
   constructor(

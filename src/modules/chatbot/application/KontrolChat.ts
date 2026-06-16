@@ -199,10 +199,10 @@ export class KontrolChat {
     const pesan = await this.repositoriChat.getHistoriPesan(idChat);
 
     // Batch-fetch semua lampiran untuk semua pesan sekaligus
-    const pesanIds = pesan.map(p => p.id);
-    const lampiranMap = pesanIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanIds)
-      : new Map();
+    // const pesanIds = pesan.map(p => p.id);
+    // const lampiranMap = pesanIds.length > 0
+    //   ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanIds)
+    //   : new Map();
 
     res.status(200).json({
       id: chat.id.toString(),
@@ -216,7 +216,8 @@ export class KontrolChat {
         chatAsisten: p.chatAsisten,
         tanggalDibuat: p.tanggalDibuat,
         gagal: p.gagal,
-        lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
+        lampiran: [],
+        // lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
       })),
     });
   }
