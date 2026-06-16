@@ -11,7 +11,7 @@ const kontrol = DI.provideKontrolTiket();
 
 const semuaPeran = [PeranPengguna.Karyawan, PeranPengguna.Admin];
 
-routerTiket.post("/", auth([PeranPengguna.Karyawan]), (req, res, next) => {
+routerTiket.post("/", auth([PeranPengguna.Karyawan]), multerUpload.array("files", 5), (req, res, next) => {
   kontrol.buatTiket(req, res).catch(next);
 });
 

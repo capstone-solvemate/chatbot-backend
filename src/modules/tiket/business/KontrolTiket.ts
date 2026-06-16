@@ -4,7 +4,6 @@ import { ForbiddenError } from "~/core/types/ForbiddenError.js";
 import { DI } from "~/di/DI.js";
 
 import type { RepositoriLampiran } from "../../upload/data/RepositoriLampiran.js";
-import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import type { RepositoriTiket, TiketDenganPembuat } from "../data/RepositoriTiket.js";
 import type { TiketEventBus } from "../event/TiketEventBus.js";
 import type {
@@ -16,6 +15,7 @@ import type {
 } from "./dto/TiketResponseDto.js";
 
 import { PeranPengguna } from "../../pengguna/domain/PeranPengguna.js";
+import { lampiranToDto } from "../../upload/domain/Lampiran.js";
 import { PesanTiket } from "../domain/PesanTiket.js";
 import { intToStatusTiket, StatusTiket, statusTiketToString } from "../domain/StatusTiket.js";
 import { Tiket } from "../domain/Tiket.js";
