@@ -97,6 +97,16 @@ export class RepositoriTiket {
     return model ? modelToTiketDenganPembuat(model) : null;
   }
 
+  async isPesanTiketExists(idTiket: bigint, idPesan: bigint): Promise<boolean> {
+    const pesanTiket = await this.modelPesanTiket.findOne({
+      where: {
+        id_tiket: idTiket.toString(),
+        id: idPesan.toString(),
+      },
+    });
+    return !!pesanTiket;
+  }
+
   async getByIdChatLengkap(idChat: bigint): Promise<TiketDenganPembuatLengkap | null> {
     const model = await this.modelTiket.findOne({
       where: { id_chat: idChat.toString() },

@@ -164,7 +164,7 @@ export class KontrolTiket {
     // Batch-fetch lampiran untuk semua pesan tiket
     const pesanIds = pesans.map(p => p.id);
     const lampiranPesanMap = pesanIds.length > 0
-      ? await this.repositoriLampiran.getByIdPesanBatch("tiket", pesanIds)
+      ? await this.repositoriLampiran.getByIdPesanBatch("pesan_tiket", pesanIds)
       : new Map();
 
     const data: TiketDetailResponseDto = {
@@ -198,6 +198,43 @@ export class KontrolTiket {
     const lampiran = await this.repositoriLampiran.getById(idLampiran);
     if (!lampiran) {
       throw new DataNotFoundError(LAMPIRAN_ENTITY_NAME);
+    }
+
+    const fullPath = path.resolve(process.cwd(), lampiran.path);
+    const data = await readFile(fullPath);
+
+    res.setHeader("Content-Type", lampiran.mimeType);
+    res.send(data);
+  }
+
+  async getLampiranPesanTiket(req: Request, res: Response): Promise<void> {
+    const idChat = BigInt(req.params.idChat);
+    const idPesan = BigInt(req.params.idPesan);
+    const sesi = req.sesiPengguna!;
+
+    const result = await this.repositoriTiket.getByIdChat(idChat);
+    if (!result) {
+      res.status(404).json({ success: false, message: "Tiket tidak ditemukan." });
+      return;
+    }
+
+    const isAdmin = sesi.peranPengguna === PeranPengguna.Admin;
+    if (!isAdmin && result.tiket.idPembuat !== sesi.idPengguna) {
+      throw new ForbiddenError();
+    }
+
+    const pesanExists = await this.repositoriTiket.isPesanTiketExists(result.tiket.id, idPesan);
+    if (!pesanExists) {
+      throw new ForbiddenError();
+    }
+
+    const idLampiran = BigInt(req.params.idLampiran);
+    const lampiran = await this.repositoriLampiran.getById(idLampiran);
+    if (!lampiran) {
+      throw new DataNotFoundError(LAMPIRAN_ENTITY_NAME);
+    }
+    if (lampiran.idPesan !== idPesan) {
+      throw new ForbiddenError();
     }
 
     const fullPath = path.resolve(process.cwd(), lampiran.path);
