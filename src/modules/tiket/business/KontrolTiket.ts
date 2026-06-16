@@ -234,9 +234,12 @@ export class KontrolTiket {
     //   ? await this.repositoriLampiran.getByIdPesanBatch("chat", pesanChatIds)
     //   : new Map();
 
+    const lampiranList = await this.repositoriLampiran.getByIdPesan("tiket", result.tiket.id);
+
     const data: TiketAdminDetailResponseDto = {
       ...tiketToDto(result),
       emailPembuat: result.emailPembuat,
+      lampiran: lampiranList.map(lampiranToDto),
       pesanTiket: pesans.map(p => ({
         ...pesanTiketToDto(p),
         lampiran: (lampiranMap.get(p.id.toString()) ?? []).map(lampiranToDto),
