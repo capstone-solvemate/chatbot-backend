@@ -6,7 +6,7 @@ import type { PesanTiket } from "../domain/PesanTiket.js";
 import type { Tiket } from "../domain/Tiket.js";
 
 import { intToStatusTiket, StatusTiket } from "../domain/StatusTiket.js";
-import { modelToPesanTiket, modelToTiket } from "./converters.js";
+import { modelToPesanTiket, rowToTiket } from "./converters.js";
 
 export type FilterTiket = {
   status?: StatusTiket;
@@ -25,14 +25,14 @@ export type TiketDenganPembuatLengkap = TiketDenganPembuat & {
 
 function modelToTiketDenganPembuat(model: any): TiketDenganPembuat {
   return {
-    tiket: modelToTiket(model),
+    tiket: rowToTiket(model),
     namaPembuat: model.pembuat?.nama ?? "",
   };
 }
 
 function modelToTiketDenganPembuatLengkap(model: any): TiketDenganPembuatLengkap {
   return {
-    tiket: modelToTiket(model),
+    tiket: rowToTiket(model),
     namaPembuat: model.pembuat?.nama ?? "",
     emailPembuat: model.pembuat?.email ?? "",
   };
@@ -52,7 +52,7 @@ export class RepositoriTiket {
 
     const tx = await this.sequelize.transaction();
     try {
-      const model = await this.modelTiket.create({
+      const row = await this.modelTiket.create({
         judul: data.judul,
         deskripsi: data.deskripsi,
         id_pembuat: data.idPembuat,
@@ -69,7 +69,7 @@ export class RepositoriTiket {
       );
 
       await tx.commit();
-      return modelToTiket(model);
+      return rowToTiket(row);
     }
     catch (e) {
       await tx.rollback();

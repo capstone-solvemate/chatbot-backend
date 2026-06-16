@@ -4,7 +4,7 @@ import { PesanTiket } from "../domain/PesanTiket.js";
 import { intToStatusTiket } from "../domain/StatusTiket.js";
 import { Tiket } from "../domain/Tiket.js";
 
-export function modelToTiket(model: Model): Tiket {
+export function rowToTiket(model: Model): Tiket {
   const d = model.dataValues;
   return new Tiket(
     BigInt(d.id),
