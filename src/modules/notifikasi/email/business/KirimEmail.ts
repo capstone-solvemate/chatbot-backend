@@ -83,6 +83,11 @@ export class KirimEmail {
         to: pesan.to,
         subject: pesan.subject,
         html: pesan.html,
+        attachments: pesan.lampiran?.map(lpr => ({
+          filename: lpr.filename,
+          content: lpr.data,
+          contentType: lpr.contentType,
+        })),
       });
 
       console.log(

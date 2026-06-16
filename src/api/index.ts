@@ -1,5 +1,6 @@
 import express from "express";
 
+import { routerRestChatbotMonitoring } from "~/modules/chatbot_monitoring/api/rest/RestRouterChatbotMonitoring.js";
 import { routerChatbot } from "~/modules/chatbot/api/rest/RestRoutesChatbot.js";
 
 import type MessageResponse from "../interfaces/message-response.js";
@@ -35,5 +36,6 @@ router.use("/admin/faqs", routerFaqAdmin);
 router.use("/admin/knowledge-base", routerKnowledgeBase);
 router.use("/chat", routerChatbot);
 router.use("/admin/pengguna", routerPenggunaAdmin);
+router.use("/chatbot-monitoring", routerRestChatbotMonitoring);
 
 export default router;

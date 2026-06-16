@@ -39,7 +39,7 @@ export class EmailWorkerClient {
     // Development: __dirname → src/workers/email/
     // Naik ke root proyek, lalu masuk ke dist/src/workers/email/
       const projectRoot = path.resolve(__dirname, "../../../../../");
-      return path.join(projectRoot, "dist", "src", "modules", "notifikasi", "email", "business", "EmailWorker.js");
+      return path.join(projectRoot, "build", "src", "modules", "notifikasi", "email", "business", "EmailWorker.js");
     }
 
     // Production: __dirname → dist/src/workers/email/

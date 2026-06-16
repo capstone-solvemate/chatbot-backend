@@ -23,6 +23,7 @@ import { createModelSession } from "~/models/ModelSession";
 import { createModelTiket } from "~/models/ModelTiket";
 import { ChatbotMonitoringWsManager } from "~/modules/chatbot_monitoring/api/ws/ChatbotMonitoringWsManager";
 import { KontrolChatbotMonitoring } from "~/modules/chatbot_monitoring/application/KontrolChatbotMonitoring";
+import { ReportGenerator } from "~/modules/chatbot_monitoring/data/ReportGenerator";
 import { RepositoriChatbotMonitoring } from "~/modules/chatbot_monitoring/data/RepositoriChatbotMonitoring";
 import { ManajerWsChat } from "~/modules/chatbot/api/ws/ManajerWsChat";
 import { KontrolChat } from "~/modules/chatbot/application/KontrolChat";
@@ -533,11 +534,22 @@ export class DI {
     return this.dashboardWsManager;
   }
 
+  private static reportGenerator: ReportGenerator | null = null;
+  static provideReportGenerator(): ReportGenerator {
+    if (!this.reportGenerator) {
+      this.reportGenerator = new ReportGenerator();
+    }
+    return this.reportGenerator;
+  }
+
   private static kontrolChatbotMonitoring: KontrolChatbotMonitoring | null = null;
   static provideKontrolChatbotMonitoring(): KontrolChatbotMonitoring {
     if (!this.kontrolChatbotMonitoring) {
       this.kontrolChatbotMonitoring = new KontrolChatbotMonitoring(
         this.provideRepositoriChatbotMonitoring(),
+        this.provideReportGenerator(),
+        this.provideRepositoriPengguna(),
+        this.provideEmailWorkerClient(),
       );
     }
     return this.kontrolChatbotMonitoring;
