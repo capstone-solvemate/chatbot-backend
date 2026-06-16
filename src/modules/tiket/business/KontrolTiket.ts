@@ -202,6 +202,8 @@ export class KontrolTiket {
 
     const fullPath = path.resolve(process.cwd(), lampiran.path);
     const data = await readFile(fullPath);
+
+    res.setHeader("Content-Type", lampiran.mimeType);
     res.send(data);
   }
 
