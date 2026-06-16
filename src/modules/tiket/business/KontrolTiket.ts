@@ -199,6 +199,9 @@ export class KontrolTiket {
     if (!lampiran) {
       throw new DataNotFoundError(LAMPIRAN_ENTITY_NAME);
     }
+    if (lampiran.idPesan !== result.tiket.id) {
+      throw new ForbiddenError();
+    }
 
     const fullPath = path.resolve(process.cwd(), lampiran.path);
     const data = await readFile(fullPath);
