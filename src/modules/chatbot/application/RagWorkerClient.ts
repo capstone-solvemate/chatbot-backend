@@ -39,7 +39,7 @@ export class RagWorkerClient {
 
     if (isDev) {
       const projectRoot = path.resolve(__dirname, "../../../../");
-      return path.join(projectRoot, "dist", "src", "modules", "chat", "business", "RagWorker.js");
+      return path.join(projectRoot, "build", "src", "modules", "chat", "business", "RagWorker.js");
     }
 
     return path.resolve(__dirname, "RagWorker.js");

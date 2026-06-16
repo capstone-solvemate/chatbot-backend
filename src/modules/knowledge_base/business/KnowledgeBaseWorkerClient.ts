@@ -71,7 +71,7 @@ export class KnowledgeBaseWorkerClient {
       // Development: __dirname → src/modules/knowledge_base/business/
       // Naik ke root proyek, lalu masuk ke dist/
       const projectRoot = path.resolve(__dirname, "../../../../");
-      return path.join(projectRoot, "dist", "src", "modules", "knowledge_base", "business", "KnowledgeBaseWorker.js");
+      return path.join(projectRoot, "build", "src", "modules", "knowledge_base", "business", "KnowledgeBaseWorker.js");
     }
 
     // Production: __dirname sudah di dist/src/modules/knowledge_base/business/
